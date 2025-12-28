@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-midnight: #020617;
+  --color-neon-teal: #00f0ff;
+  --color-neon-orange: #ff4d00;
+  --color-carbon-dark: #0a0a0a;
+  --color-pearl-border: rgba(255, 255, 255, 0.2);
+}
+
+:root {
+  --background: var(--color-midnight);
+  --foreground: #ffffff;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Carbon Texture Utility */
+.bg-carbon {
+  background-color: #020617;
+  background-image: 
+    radial-gradient(circle at center, #0a0e24 0%, transparent 100%),
+    linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%, rgba(255,255,255,0.02));
+  background-size: 100% 100%, 20px 20px;
+}
+
+/* Glassmorphism */
+.glass-premium {
+  background: rgba(2, 6, 23, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-pearl-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.text-glow {
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+.border-glow {
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2), inset 0 0 5px rgba(0, 240, 255, 0.1);
+}
