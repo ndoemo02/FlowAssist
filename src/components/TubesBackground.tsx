@@ -34,7 +34,7 @@ export default function TubesBackground() {
         }
 
         const handleTouchMove = (e: TouchEvent) => {
-            if (e.touches.length > 0) {
+            if (e.touches.length > 0 && canvasRef.current) {
                 const touch = e.touches[0]
                 const mouseEvent = new MouseEvent('mousemove', {
                     clientX: touch.clientX,
@@ -43,7 +43,7 @@ export default function TubesBackground() {
                     cancelable: true,
                     view: window
                 })
-                window.dispatchEvent(mouseEvent)
+                canvasRef.current.dispatchEvent(mouseEvent)
             }
         }
 
