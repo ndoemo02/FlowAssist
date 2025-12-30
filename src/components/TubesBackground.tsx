@@ -33,10 +33,26 @@ export default function TubesBackground() {
             app.tubes.setLightsColors(lightsColors)
         }
 
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0]
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                })
+                window.dispatchEvent(mouseEvent)
+            }
+        }
+
         document.addEventListener('click', handleClick)
+        window.addEventListener('touchmove', handleTouchMove, { passive: true })
 
         return () => {
             document.removeEventListener('click', handleClick)
+            window.removeEventListener('touchmove', handleTouchMove)
         }
     }, [])
 
