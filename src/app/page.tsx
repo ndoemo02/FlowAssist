@@ -10,27 +10,31 @@ export default function Home() {
             <TubesBackground />
 
             {/* Iteration 2: Hero Section */}
+            {/* Iteration 2: Hero Section */}
             <div className="z-10 text-center max-w-4xl">
-                <h1 className="text-5xl md:text-7xl font-semibold text-white mb-6 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] leading-tight">
-                    Twoja marka już istnieje, <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-blue-200">
-                        razem pokażmy ją światu.
+                <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-xl leading-snug">
+                    Obsługa klienta, zarządzanie i analiza<br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">
+                        – w jednym systemie.
                     </span>
                 </h1>
-                <p className="text-lg md:text-xl text-white/60 mb-10 max-w-2xl mx-auto">
-                    Inteligentni asystenci 3D i automatyzacja procesów.
-                    Skrojone pod Twoje potrzeby, niezależnie od branży.
+                <p className="text-lg text-slate-300/80 mb-10 max-w-2xl mx-auto leading-relaxed font-light">
+                    System, który odbiera rozmowy, porządkuje działania<br className="hidden md:block" />
+                    i pokazuje realne dane.
                 </p>
 
-                {/* Iteration 3: Action Button with Glow */}
-                <div className="flex flex-col items-center gap-3">
-                    <button className="px-8 py-4 bg-gradient-to-br from-white via-slate-100 to-blue-50 text-black font-bold rounded-full 
-                             hover:scale-105 transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] active:scale-95">
+                {/* Iteration 3: Action Buttons */}
+                <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                    <button className="px-8 py-3.5 bg-white text-black font-semibold rounded-full 
+                             hover:scale-105 transition-all hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] active:scale-95">
                         Launch Console
                     </button>
-                    <span className="text-[10px] uppercase tracking-widest text-white/40 font-light">
-                        Kliknij, aby wejść do środowiska zarządzania FlowAssist 3D
-                    </span>
+
+                    <button className="px-8 py-3.5 flex items-center gap-2 bg-white/5 border border-white/10 text-white font-medium rounded-full 
+                             hover:bg-white/10 transition-all active:scale-95 backdrop-blur-sm">
+                        <span>Zobacz live demo</span>
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    </button>
                 </div>
             </div>
 
