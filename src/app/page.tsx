@@ -1,7 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
 
-
 const TubesBackground = dynamic(() => import('@/components/TubesBackground'), { ssr: false })
 
 export default function Home() {
@@ -9,7 +8,6 @@ export default function Home() {
         <main className="relative min-h-screen flex flex-col items-center justify-center pt-20 px-4 overflow-hidden">
             <TubesBackground />
 
-            {/* Iteration 2: Hero Section */}
             {/* Iteration 2: Hero Section */}
             <div className="z-10 text-center max-w-4xl">
                 <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-xl leading-snug">
@@ -22,24 +20,7 @@ export default function Home() {
                     System, który odbiera rozmowy, porządkuje działania<br className="hidden md:block" />
                     i pokazuje realne dane.
                 </p>
-
-                {/* Iteration 3: Action Buttons */}
-                <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-                    <button className="px-8 py-3.5 bg-white text-black font-semibold rounded-full 
-                             hover:scale-105 transition-all hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] active:scale-95">
-                        Launch Console
-                    </button>
-
-                    <button className="px-8 py-3.5 flex items-center gap-2 bg-white/5 border border-white/10 text-white font-medium rounded-full 
-                             hover:bg-white/10 transition-all active:scale-95 backdrop-blur-sm">
-                        <span>Zobacz live demo</span>
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    </button>
-                </div>
             </div>
-
-            {/* Iteration 4: Industries Section */}
-            {/* Iteration 4: Industries Section (Removed) */}
         </main>
     )
 }
