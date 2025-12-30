@@ -1,6 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
-import { Stethoscope, Utensils, Building2 } from 'lucide-react';
+
 
 const TubesBackground = dynamic(() => import('@/components/TubesBackground'), { ssr: false })
 
@@ -39,21 +39,7 @@ export default function Home() {
             </div>
 
             {/* Iteration 4: Industries Section */}
-            <div className="z-10 mt-24 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full">
-                {[
-                    { icon: <Stethoscope size={32} key="med" />, title: "Medycyna", desc: "Dla gabinetów i klinik" },
-                    { icon: <Utensils size={32} key="food" />, title: "Gastronomia", desc: "Dla restauracji i kawiarni" },
-                    { icon: <Building2 size={32} key="biz" />, title: "Biznes", desc: "Dla nowoczesnych firm SaaS" },
-                ].map((item, idx) => (
-                    <div key={idx} className="group flex flex-col items-center p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 transition-all">
-                        <div className="text-blue-400 group-hover:text-blue-300 transition-colors mb-4 italic">
-                            {item.icon}
-                        </div>
-                        <h3 className="text-white font-medium mb-1">{item.title}</h3>
-                        <p className="text-white/40 text-sm text-center">{item.desc}</p>
-                    </div>
-                ))}
-            </div>
+            {/* Iteration 4: Industries Section (Removed) */}
         </main>
     )
 }
