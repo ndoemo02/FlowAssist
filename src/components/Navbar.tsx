@@ -2,7 +2,7 @@ import Image from 'next/image';
 
 export const Navbar = () => {
     return (
-        <nav className="fixed top-0 w-full z-50 bg-white/5 backdrop-blur-md border-b border-white/10 px-6 py-4">
+        <nav className="fixed top-0 w-full z-50 px-6 py-4">
             <div className="max-w-7xl mx-auto flex justify-between items-center">
                 {/* Kontener Logo z delikatnym blurem pod spodem */}
                 <div className="flex items-center gap-2 p-1">
