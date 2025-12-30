@@ -18,8 +18,7 @@
         "react": "^18",
         "react-dom": "^18",
         "tailwind-merge": "^2.2.0",
-        "three": "^0.160.0",
-        "threejs-components": "^0.0.30"
+        "three": "^0.160.1"
     },
     "devDependencies": {
         "@types/node": "^20",

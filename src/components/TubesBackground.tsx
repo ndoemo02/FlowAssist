@@ -33,13 +33,10 @@ export default function TubesBackground() {
             app.tubes.setLightsColors(lightsColors)
         }
 
-        // Using document listener for the effect interaction as seen in CodePen
         document.addEventListener('click', handleClick)
 
         return () => {
             document.removeEventListener('click', handleClick)
-            // There is no obvious dispose method in the snippet, but typical cleanup would go here
-            // For now we assume the canvas removal cleans up the context mostly
         }
     }, [])
 

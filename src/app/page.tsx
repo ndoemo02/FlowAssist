@@ -1,4 +1,6 @@
-import TubesBackground from '@/components/TubesBackground'
+import dynamic from 'next/dynamic'
+
+const TubesBackground = dynamic(() => import('@/components/TubesBackground'), { ssr: false })
 
 export default function Home() {
     return (
