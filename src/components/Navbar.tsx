@@ -7,7 +7,7 @@ export const Navbar = () => {
                 {/* Kontener Logo z delikatnym blurem pod spodem */}
                 <div className="flex items-center gap-2 p-1">
                     <Image
-                        src="/Flowassis.png"
+                        src="/logo flowassist1.png"
                         alt="FlowAssist Logo"
                         width={120}
                         height={40}
