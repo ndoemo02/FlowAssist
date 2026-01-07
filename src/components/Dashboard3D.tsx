@@ -1,9 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Text, OrbitControls } from '@react-three/drei'
+import { Text, OrbitControls, Html } from '@react-three/drei'
 import * as THREE from 'three'
+import { useView } from '@/context/ViewProvider'
 
 interface PanelProps {
     position: [number, number, number]
@@ -13,18 +14,26 @@ interface PanelProps {
 }
 
 const Panel = ({ position, rotation, title, color }: PanelProps) => {
+    const { setView } = useView()
+    const [hovered, setHovered] = useState(false)
     const width = 6
     const height = 4
 
     return (
-        <group position={position} rotation={rotation}>
+        <group
+            position={position}
+            rotation={rotation}
+            onClick={() => setView('HOME')}
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => setHovered(false)}
+        >
             {/* Main Panel with Glow */}
             <mesh>
                 <planeGeometry args={[width, height]} />
                 <meshStandardMaterial
                     color={color}
                     emissive={color}
-                    emissiveIntensity={0.5}
+                    emissiveIntensity={hovered ? 0.8 : 0.5}
                     transparent
                     opacity={0.3}
                     side={THREE.DoubleSide}
@@ -39,9 +48,42 @@ const Panel = ({ position, rotation, title, color }: PanelProps) => {
                 </lineSegments>
             </mesh>
 
-            {/* Title Text */}
+            {/* Interactive HTML Preview */}
+            <Html
+                transform
+                occlude
+                position={[0, 0, 0.05]}
+                style={{
+                    width: '600px',
+                    height: '400px',
+                    // Scale down to fit the panel resolution better
+                    transform: 'scale(0.5)',
+                    transformOrigin: 'top left',
+                    pointerEvents: 'none' // Let the click pass through to the mesh for navigation, or use button inside
+                }}
+            >
+                <div className="w-[1200px] h-[800px] bg-slate-900/80 backdrop-blur-md p-10 flex flex-col items-center justify-center text-center border border-white/10 rounded-xl overflow-hidden shadow-2xl">
+                    {/* Replica of Home Page Hero */}
+                    <div className="z-10 text-center max-w-4xl">
+                        <h1 className="text-6xl font-bold text-white mb-8 drop-shadow-xl leading-snug">
+                            Obsługa klienta, zarządzanie i analiza<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-blue-400">
+                                – w jednym systemie.
+                            </span>
+                        </h1>
+                        <p className="text-3xl text-slate-300/80 mb-10 max-w-2xl mx-auto leading-relaxed font-light">
+                            Kliknij, aby przejść do pełnego widoku {title}.
+                        </p>
+                        <div className="px-6 py-3 bg-blue-600 text-white rounded-full text-2xl font-semibold shadow-lg shadow-blue-500/30">
+                            Zobacz Więcej
+                        </div>
+                    </div>
+                </div>
+            </Html>
+
+            {/* Title Text (Above Panel) */}
             <Text
-                position={[0, 1.5, 0.1]}
+                position={[0, 2.3, 0.1]}
                 fontSize={0.5}
                 color="white"
                 anchorX="center"
@@ -50,21 +92,6 @@ const Panel = ({ position, rotation, title, color }: PanelProps) => {
                 outlineColor="#000000"
             >
                 {title}
-            </Text>
-
-            {/* Mock Content Text */}
-            <Text
-                position={[0, 0, 0.1]}
-                fontSize={0.25}
-                color="#eeeeee"
-                anchorX="center"
-                anchorY="middle"
-                maxWidth={5}
-                textAlign="center"
-            >
-                Analiza danych dla {title}
-                {'\n'}
-                Zasięg: +24% | Zaangażowanie: 12%
             </Text>
         </group>
     )
@@ -90,6 +117,9 @@ export default function Dashboard3D() {
                     enablePan={false}
                     rotateSpeed={-0.5}
                     target={[0, 0, 0]}
+                    // Limit vertical angle to avoid getting lost
+                    minPolarAngle={Math.PI / 2 - 0.5}
+                    maxPolarAngle={Math.PI / 2 + 0.5}
                 />
 
                 <ambientLight intensity={0.2} />
