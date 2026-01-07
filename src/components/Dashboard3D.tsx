@@ -13,35 +13,41 @@ interface PanelProps {
 }
 
 const Panel = ({ position, rotation, title, color }: PanelProps) => {
+    const width = 6
+    const height = 4
+
     return (
         <group position={position} rotation={rotation}>
-            {/* Semi-transparent panel */}
+            {/* Main Panel with Glow */}
             <mesh>
-                <planeGeometry args={[3, 2]} />
-                <meshBasicMaterial
+                <planeGeometry args={[width, height]} />
+                <meshStandardMaterial
                     color={color}
+                    emissive={color}
+                    emissiveIntensity={0.5}
                     transparent
-                    opacity={0.2}
+                    opacity={0.3}
                     side={THREE.DoubleSide}
                 />
             </mesh>
 
             {/* Border/Frame */}
-            <mesh position={[0, 0, 0.01]}>
-                <ringGeometry args={[0, 0, 0]} /> {/* Placeholder for simpler frame if needed, or stick to simple plane */}
+            <mesh position={[0, 0, 0.02]}>
                 <lineSegments>
-                    <edgesGeometry args={[new THREE.PlaneGeometry(3, 2)]} />
-                    <lineBasicMaterial color={color} />
+                    <edgesGeometry args={[new THREE.PlaneGeometry(width, height)]} />
+                    <lineBasicMaterial color={color} linewidth={2} />
                 </lineSegments>
             </mesh>
 
             {/* Title Text */}
             <Text
-                position={[0, 0.5, 0.1]}
-                fontSize={0.3}
+                position={[0, 1.5, 0.1]}
+                fontSize={0.5}
                 color="white"
                 anchorX="center"
                 anchorY="middle"
+                outlineWidth={0.02}
+                outlineColor="#000000"
             >
                 {title}
             </Text>
@@ -49,14 +55,16 @@ const Panel = ({ position, rotation, title, color }: PanelProps) => {
             {/* Mock Content Text */}
             <Text
                 position={[0, 0, 0.1]}
-                fontSize={0.15}
-                color="#cccccc"
+                fontSize={0.25}
+                color="#eeeeee"
                 anchorX="center"
                 anchorY="middle"
-                maxWidth={2.5}
+                maxWidth={5}
                 textAlign="center"
             >
                 Analiza danych dla {title}
+                {'\n'}
+                Zasięg: +24% | Zaangażowanie: 12%
             </Text>
         </group>
     )
@@ -69,7 +77,7 @@ export default function Dashboard3D() {
         { title: 'TikTok', color: '#00f2ea', angle: (4 * Math.PI) / 3 },
     ]
 
-    const radius = 4
+    const radius = 7.5
 
     return (
         <div className="w-full h-full bg-black">
@@ -84,26 +92,24 @@ export default function Dashboard3D() {
                     target={[0, 0, 0]}
                 />
 
-                <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} />
+                <ambientLight intensity={0.2} />
+                <pointLight position={[0, 5, 0]} intensity={1} />
+                <pointLight position={[10, 10, 10]} intensity={0.5} />
 
                 {panels.map((panel, index) => {
                     const x = -Math.sin(panel.angle) * radius
                     const z = -Math.cos(panel.angle) * radius
+
                     // Calculate rotation to face center (0,0,0)
-                    // Normal plane setup faces +Z. We want it to face (0,0,0).
-                    // At angle 0 (Negative Z axis), it should be at [0, 0, -radius]
-                    // Rotation should be 0, so it faces +Z (towards origin).
-                    // Let's rely on lookAt behavior or manual calc.
+                    // We use atan2(x, z) to get the angle of position relative to origin
+                    // Adding PI rotates it 180 degrees to face the origin instead of away from it
+                    const rotY = Math.atan2(x, z) + Math.PI
 
                     return (
                         <Panel
                             key={index}
                             position={[x, 0, z]}
-                            // Rotate to face center. 
-                            // At angle 0, x=0, z=-r. We want to face 0,0,0. That matches default if we consider "front" of plane.
-                            // Actually simple calculation:
-                            rotation={[0, -panel.angle, 0]}
+                            rotation={[0, rotY, 0]}
                             title={panel.title}
                             color={panel.color}
                         />
@@ -111,12 +117,12 @@ export default function Dashboard3D() {
                 })}
 
                 {/* Floor grid for reference */}
-                <gridHelper args={[20, 20, 0x333333, 0x111111]} position={[0, -2, 0]} />
+                <gridHelper args={[30, 30, 0x333333, 0x111111]} position={[0, -4, 0]} />
 
                 {/* Stars or particles for atmosphere */}
                 <mesh position={[0, 0, 0]}>
-                    <sphereGeometry args={[10, 32, 32]} />
-                    <meshBasicMaterial color="#000" side={THREE.BackSide} />
+                    <sphereGeometry args={[20, 32, 32]} />
+                    <meshBasicMaterial color="#050505" side={THREE.BackSide} />
                 </mesh>
 
             </Canvas>
