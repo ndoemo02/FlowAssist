@@ -1,9 +1,21 @@
 'use client'
 import dynamic from 'next/dynamic'
+import { useView } from '@/context/ViewProvider'
+import Dashboard3D from '@/components/Dashboard3D'
 
 const TubesBackground = dynamic(() => import('@/components/TubesBackground'), { ssr: false })
 
 export default function Home() {
+    const { currentView } = useView()
+
+    if (currentView === 'DEV_PANEL') {
+        return (
+            <main className="relative w-full h-screen bg-black overflow-hidden">
+                <Dashboard3D />
+            </main>
+        )
+    }
+
     return (
         <main className="relative min-h-screen flex flex-col items-center justify-center pt-20 px-4 overflow-hidden">
             <TubesBackground />

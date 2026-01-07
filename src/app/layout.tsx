@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: 'Voice Engineering Agency',
 }
 
+import { ViewProvider } from '@/context/ViewProvider'
+
 export default function RootLayout({
   children,
 }: {
@@ -17,8 +19,10 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-[#020617] text-white antialiased selection:bg-indigo-500/30">
         <div className="relative z-0 min-h-screen w-full overflow-hidden">
-          <Navbar />
-          {children}
+          <ViewProvider>
+            <Navbar />
+            {children}
+          </ViewProvider>
         </div>
       </body>
     </html>
