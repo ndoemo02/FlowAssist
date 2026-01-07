@@ -16,8 +16,19 @@ interface PanelProps {
 const Panel = ({ position, rotation, title, color }: PanelProps) => {
     const { setView } = useView()
     const [hovered, setHovered] = useState(false)
+    const [activeVideo, setActiveVideo] = useState<string | null>(null)
     const width = 6
     const height = 4
+
+    // Mock Video Data with Real IDs for demo
+    const mockVideos = [
+        { id: "LXb3EKWsInQ", title: "Eksploracja Opuszczonej Fabryki", views: "120 tys.", time: "2 dni temu", duration: "14:20" },
+        { id: "gnVd3Q9-mNU", title: "JAK PRZETRWAĆ W LESIE? - Poradnik", views: "85 tys.", time: "5 dni temu", duration: "22:15" },
+        { id: "tVsCKxVdb3U", title: "Nocleg na Dzikiej Plaży", views: "240 tys.", time: "1 tydzień temu", duration: "18:45" },
+        { id: "z7yqtW4Isec", title: "Testujemy Sprzęt Survivalowy", views: "90 tys.", time: "2 tygodnie temu", duration: "10:30" },
+        { id: "LNO1-M1F9F0", title: "Vlog z Podróży do Azji", views: "1.5 mln", time: "1 miesiąc temu", duration: "25:10" },
+        { id: "ysz5S6PUM-U", title: "Q&A - Wasze Pytania", views: "50 tys.", time: "3 tygodnie temu", duration: "45:00" }
+    ]
 
     return (
         <group
@@ -72,68 +83,90 @@ const Panel = ({ position, rotation, title, color }: PanelProps) => {
                     onClick={(e) => e.stopPropagation()}
                 >
                     {title === 'YouTube' && (
-                        <div className="w-full h-full flex flex-col bg-[#0f0f0f] text-white font-sans">
-                            {/* Header / Brand */}
-                            <div className="h-24 flex items-center px-10 border-b border-white/10 justify-between bg-[#0f0f0f] z-10">
-                                <div className="flex items-center gap-6">
-                                    {/* Mock Avatar */}
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-red-500 flex items-center justify-center text-2xl font-bold">
-                                        CK
+                        <div className="w-full h-full flex flex-col bg-[#0f0f0f] text-white font-sans relative">
+
+                            {activeVideo ? (
+                                // Video Player View
+                                <div className="w-full h-full flex flex-col">
+                                    <div className="bg-black/50 p-4 absolute top-0 left-0 z-20 w-full flex items-center gap-4">
+                                        <button
+                                            onClick={() => setActiveVideo(null)}
+                                            className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-full backdrop-blur-md flex items-center gap-2 font-bold transition-all"
+                                        >
+                                            ← Powrót do kanału
+                                        </button>
+                                        <span className="text-xl font-semibold opacity-80">Odtwarzanie...</span>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-4xl font-bold tracking-tight">Przygody z Konradem</span>
-                                        <span className="text-gray-400 text-lg">@PrzygodyzKonradem • 1.2M subskrypcji</span>
-                                    </div>
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1`}
+                                        title="YouTube video player"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        className="w-full h-full"
+                                    ></iframe>
                                 </div>
-                                <button className="bg-white text-black px-8 py-3 rounded-full font-bold text-xl hover:bg-gray-200 transition-colors">
-                                    Subskrybuj
-                                </button>
-                            </div>
-
-                            {/* Navigation Tabs */}
-                            <div className="flex px-10 border-b border-white/10 text-xl font-medium text-gray-400 gap-10 h-16 items-center">
-                                <div className="text-white border-b-4 border-white h-full flex items-center px-2 cursor-pointer">Wideo</div>
-                                <div className="hover:text-white cursor-pointer h-full flex items-center px-2">Shorts</div>
-                                <div className="hover:text-white cursor-pointer h-full flex items-center px-2">Na żywo</div>
-                                <div className="hover:text-white cursor-pointer h-full flex items-center px-2">Playhisty</div>
-                            </div>
-
-                            {/* Video Grid */}
-                            <div className="p-10 grid grid-cols-3 gap-10 overflow-y-auto custom-scrollbar">
-                                {[
-                                    { title: "Eksploracja Opuszczonej Fabryki", views: "120 tys.", time: "2 dni temu", duration: "14:20" },
-                                    { title: "JAK PRZETRWAĆ W LESIE? - Poradnik", views: "85 tys.", time: "5 dni temu", duration: "22:15" },
-                                    { title: "Nocleg na Dzikiej Plaży", views: "240 tys.", time: "1 tydzień temu", duration: "18:45" },
-                                    { title: "Testujemy Sprzęt Survivalowy", views: "90 tys.", time: "2 tygodnie temu", duration: "10:30" },
-                                    { title: "Q&A - Wasze Pytania", views: "50 tys.", time: "3 tygodnie temu", duration: "45:00" },
-                                    { title: "Vlog z Podróży do Azji", views: "1.5 mln", time: "1 miesiąc temu", duration: "25:10" }
-                                ].map((video, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex flex-col gap-4 group cursor-pointer"
-                                        onClick={() => window.open(`https://www.youtube.com/@PrzygodyzKonradem/videos`, '_blank')}
-                                    >
-                                        <div className="w-full aspect-video bg-slate-800 rounded-xl relative overflow-hidden ring-2 ring-transparent group-hover:ring-white/50 transition-all">
-                                            {/* Thumbnail Gradient Placeholder */}
-                                            <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800 group-hover:scale-105 transition-transform duration-500"></div>
-                                            <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-sm font-medium">{video.duration}</div>
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                                                <svg className="w-16 h-16 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            ) : (
+                                // Channel List View
+                                <>
+                                    {/* Header / Brand */}
+                                    <div className="h-24 flex items-center px-10 border-b border-white/10 justify-between bg-[#0f0f0f] z-10">
+                                        <div className="flex items-center gap-6">
+                                            {/* Mock Avatar */}
+                                            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 to-red-500 flex items-center justify-center text-2xl font-bold">
+                                                CK
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-4xl font-bold tracking-tight">Przygody z Konradem</span>
+                                                <span className="text-gray-400 text-lg">@PrzygodyzKonradem • 1.2M subskrypcji</span>
                                             </div>
                                         </div>
-                                        <div className="flex gap-4">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="text-xl font-bold leading-tight group-hover:text-blue-400 transition-colors line-clamp-2">
-                                                    {video.title}
-                                                </div>
-                                                <div className="text-gray-400 text-base">
-                                                    {video.views} wyświetleń • {video.time}
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <button className="bg-white text-black px-8 py-3 rounded-full font-bold text-xl hover:bg-gray-200 transition-colors">
+                                            Subskrybuj
+                                        </button>
                                     </div>
-                                ))}
-                            </div>
+
+                                    {/* Navigation Tabs */}
+                                    <div className="flex px-10 border-b border-white/10 text-xl font-medium text-gray-400 gap-10 h-16 items-center">
+                                        <div className="text-white border-b-4 border-white h-full flex items-center px-2 cursor-pointer">Wideo</div>
+                                        <div className="hover:text-white cursor-pointer h-full flex items-center px-2">Shorts</div>
+                                        <div className="hover:text-white cursor-pointer h-full flex items-center px-2">Na żywo</div>
+                                        <div className="hover:text-white cursor-pointer h-full flex items-center px-2">Playhisty</div>
+                                    </div>
+
+                                    {/* Video Grid */}
+                                    <div className="p-10 grid grid-cols-3 gap-10 overflow-y-auto custom-scrollbar pb-32">
+                                        {mockVideos.map((video, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex flex-col gap-4 group cursor-pointer"
+                                                onClick={() => setActiveVideo(video.id)}
+                                            >
+                                                <div className="w-full aspect-video bg-slate-800 rounded-xl relative overflow-hidden ring-2 ring-transparent group-hover:ring-white/50 transition-all">
+                                                    {/* Thumbnail Gradient Placeholder */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-800 group-hover:scale-105 transition-transform duration-500"></div>
+                                                    <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-sm font-medium">{video.duration}</div>
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                                                        <svg className="w-16 h-16 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="text-xl font-bold leading-tight group-hover:text-blue-400 transition-colors line-clamp-2">
+                                                            {video.title}
+                                                        </div>
+                                                        <div className="text-gray-400 text-base">
+                                                            {video.views} wyświetleń • {video.time}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
