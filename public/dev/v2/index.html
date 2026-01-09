@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FreeFlowXR – Dev Panel V2 (Living Room)</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+
+    <!-- Import Map: Używamy CDN dla stabilności -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Joystick Container -->
+    <div id="joystick-zone"
+        style="position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px; z-index: 100; touch-action: none;">
+        <div id="joystick-base"
+            style="position: relative; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%;">
+            <div id="joystick-stick"
+                style="position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer;">
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // === INICJALIZACJA SCENY ===
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x88ccff); // Niebieskie niebo domyślnie
+
+        // === GUI SETUP ===
+        const gui = new GUI();
+        gui.title('Dev Panel V2 Controls');
+
+        // === KAMERA (FPS) ===
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.rotation.order = 'YXZ';
+        camera.position.set(0, 2, 8); // Startowa pozycja
+
+        // === RENDERER ===
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // === OŚWIETLENIE ===
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfffaed, 2.0);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // === ENVIRONMENT ===
+        const exrLoader = new EXRLoader();
+        // Używamy tego samego HDRI co w V1 dla spójności, lub można zmienić
+        exrLoader.load('/dev/Assets/studio_small_08_4k.exr', (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = texture;
+            scene.background = texture; // Ustawiamy też jako tło w V2
+            scene.environmentIntensity = 0.6;
+            scene.backgroundBlurriness = 0.2;
+        }, undefined, (err) => console.warn('Można zignorować jeśli brak HDRI w devie:', err));
+
+        // === MODEL: Living Room Diorama ===
+        const loader = new GLTFLoader();
+        loader.load('/dev/Assets/stylized-isometric-living-room-diorama/source/Modern Modular Living Room.glb', (gltf) => {
+            const model = gltf.scene;
+
+            // Auto-skalowanie i pozycjonowanie
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+
+            // Centrujemy model
+            model.position.sub(center);
+
+            // Jeśli bardzo mały/duży, skalujemy. Przyjmijmy że diorama powinna mieć ok 10m szerokości
+            // Sprawdźmy size.x
+            // console.log("Model size:", size);
+
+            // Dla pewności ustawiamy na podłodze (Y=0)
+            model.position.y = 0;
+
+            // Włączamy cienie
+            model.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            scene.add(model);
+
+            // GUI dla Modelu
+            const folder = gui.addFolder('Diorama Settings');
+            folder.add(model.rotation, 'y', 0, Math.PI * 2).name('Rotate Y');
+            folder.add(model.position, 'y', -5, 5).name('Position Y');
+
+        }, undefined, (error) => console.error('Błąd ładowania Living Room:', error));
+
+
+        // === FPS CONTROLS (WSAD + Mouse + Touch) ===
+        const keys = { w: false, s: false, a: false, d: false };
+        const playerParams = {
+            height: 2.0,
+            speed: 0.1,
+            gyroEnabled: false
+        };
+
+        const playerFolder = gui.addFolder('Player Settings');
+        playerFolder.add(playerParams, 'height', 0.1, 20.0).name('View Height');
+        playerFolder.add(playerParams, 'speed', 0.01, 2.0).name('Walk Speed');
+        playerFolder.add(playerParams, 'gyroEnabled').name('Gyroscope').onChange(v => {
+            if (v && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().catch(console.error);
+            }
+        });
+
+        // Keyboard
+        document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+        // Mouse Look
+        document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
+        document.addEventListener("click", (event) => {
+            if (event.target.closest('.lil-gui')) return;
+            document.body.requestPointerLock();
+        });
+
+        document.addEventListener("mousemove", e => {
+            if (document.pointerLockElement === document.body) {
+                camera.rotation.y -= e.movementX * 0.002;
+                camera.rotation.x -= e.movementY * 0.002;
+                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+            }
+        });
+
+        // Joystick & Touch
+        const joystick = { x: 0, y: 0, active: false };
+        const stick = document.getElementById('joystick-stick');
+        const zone = document.getElementById('joystick-zone');
+        const maxDist = 40;
+
+        function handleJoystick(e) {
+            e.preventDefault();
+            const rect = zone.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let dx = clientX - centerX;
+            let dy = clientY - centerY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > maxDist) {
+                const angle = Math.atan2(dy, dx);
+                dx = Math.cos(angle) * maxDist;
+                dy = Math.sin(angle) * maxDist;
+            }
+            stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            joystick.x = dx / maxDist;
+            joystick.y = dy / maxDist;
+            joystick.active = true;
+        }
+
+        function resetJoystick() {
+            stick.style.transform = `translate(-50%, -50%)`;
+            joystick.x = 0; joystick.y = 0; joystick.active = false;
+        }
+
+        zone.addEventListener('mousedown', (e) => { handleJoystick(e); document.addEventListener('mousemove', handleJoystick); document.addEventListener('mouseup', resetJoystick); });
+        zone.addEventListener('touchstart', (e) => { handleJoystick(e); });
+        zone.addEventListener('touchmove', handleJoystick);
+        zone.addEventListener('touchend', resetJoystick);
+
+        // Touch Rotation
+        let touchStartX = 0;
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#joystick-zone')) return;
+            if (e.touches.length === 1) touchStartX = e.touches[0].pageX;
+        });
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('#joystick-zone')) return;
+            if (e.touches.length === 1) {
+                const deltaX = e.touches[0].pageX - touchStartX;
+                camera.rotation.y -= deltaX * 0.005;
+                touchStartX = e.touches[0].pageX;
+            }
+        });
+
+        // Gyro
+        window.addEventListener('deviceorientation', (event) => {
+            if (!playerParams.gyroEnabled) return;
+            camera.rotation.y -= (event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0) * 0.02;
+            camera.rotation.x -= (event.beta ? THREE.MathUtils.degToRad(event.beta) : 0) * 0.02;
+        });
+
+        // Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const direction = new THREE.Vector3();
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.y = 0; forward.normalize();
+            right.crossVectors(forward, camera.up).normalize();
+
+            if (keys.w) direction.add(forward);
+            if (keys.s) direction.sub(forward);
+            if (keys.a) direction.sub(right);
+            if (keys.d) direction.add(right);
+
+            if (joystick.active) {
+                const joyForward = new THREE.Vector3().copy(forward).multiplyScalar(-joystick.y);
+                const joyRight = new THREE.Vector3().copy(right).multiplyScalar(joystick.x);
+                direction.add(joyForward).add(joyRight);
+            }
+
+            if (direction.lengthSq() > 0) {
+                direction.normalize().multiplyScalar(playerParams.speed);
+                camera.position.add(direction);
+            }
+
+            camera.position.y = playerParams.height;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+
+</html>
