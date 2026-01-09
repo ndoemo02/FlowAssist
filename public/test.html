@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FreeFlowXR – Professional Studio</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+
+    <!-- Import Map: Używamy CDN dla stabilności -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="overlay" style="position: absolute; top: 20px; left: 20px; z-index: 100;">
+        <button id="playButton" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Kliknij by włączyć
+            wideo</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+        import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // === INICJALIZACJA SCENY ===
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x222222); // Ciemne tło
+
+        // === GUI SETUP ===
+        const gui = new GUI();
+        gui.title('Studio Controls');
+
+        // === KAMERA (FPS) ===
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.rotation.order = 'YXZ'; // Zapobiega przechylaniu się (roll)
+        camera.position.set(0, 1.7, 5); // Wysokość oczu 1.7m
+
+        // === RENDERER ===
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // === FPS CONTROLS (WSAD + Mouse) ===
+        const keys = { w: false, s: false, a: false, d: false };
+
+        const playerParams = {
+            height: 5.09,
+            speed: 0.31
+        };
+
+        const playerFolder = gui.addFolder('Player Settings');
+        playerFolder.add(playerParams, 'height', 0.1, 20.0).name('View Height');
+        playerFolder.add(playerParams, 'speed', 0.01, 2.0).name('Walk Speed');
+
+        // Keyboard
+        document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+        // Mouse Look (Pointer Lock)
+        document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
+        document.addEventListener("click", (event) => {
+            // Ignoruj kliknięcia w GUI
+            if (event.target.closest('.lil-gui')) return;
+            document.body.requestPointerLock();
+        });
+
+        document.addEventListener("mousemove", e => {
+            if (document.pointerLockElement === document.body) {
+                camera.rotation.y -= e.movementX * 0.002;
+                camera.rotation.x -= e.movementY * 0.002;
+
+                // Ograniczenie patrzenia góra/dół (nie łamiemy karku)
+                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+            }
+        });
+
+        // === OŚWIETLENIE ===
+        RectAreaLightUniformsLib.init();
+
+        // 1. Key Light
+        const rectLight = new THREE.RectAreaLight(0xffffff, 2.0, 2, 2);
+        rectLight.position.set(-2, 2, 2);
+        rectLight.lookAt(0, 0.5, 0);
+        scene.add(rectLight);
+
+        // 2. Fill Light
+        const spotLight = new THREE.SpotLight(0xffddaa, 50);
+        spotLight.position.set(3, 3, 2);
+        spotLight.angle = Math.PI / 6;
+        spotLight.penumbra = 0.5;
+        spotLight.castShadow = true;
+        spotLight.shadow.bias = -0.0001;
+        scene.add(spotLight);
+
+        // 3. Rim Light
+        const rimLight = new THREE.DirectionalLight(0xccddff, 1.5);
+        rimLight.position.set(0, 3, -3);
+        scene.add(rimLight);
+
+        // === ROOM ENVIRONMENT (Studio 40x20x40) ===
+        const roomSize = { w: 40, h: 20, d: 40 };
+        const roomGeo = new THREE.BoxGeometry(roomSize.w, roomSize.h, roomSize.d);
+
+        // Materiały: Ciemnoszary beton studyjny
+        const wallMat = new THREE.MeshStandardMaterial({
+            color: 0x222222,
+            roughness: 0.5,
+            side: THREE.BackSide
+        });
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x222222,
+            roughness: 0.8,
+            side: THREE.BackSide
+        });
+
+        const roomMaterials = [
+            wallMat, // Right
+            wallMat, // Left
+            wallMat, // Top (Sufit)
+            floorMat, // Bottom (Podłoga)
+            wallMat, // Front
+            wallMat  // Back
+        ];
+
+        const room = new THREE.Mesh(roomGeo, roomMaterials);
+        room.position.set(0, roomSize.h / 2, 0); // Podłoga na y=0
+        room.receiveShadow = true;
+        scene.add(room);
+
+        // === HDRI ENVIRONMENT (Tylko oświetlenie) ===
+        const exrLoader = new EXRLoader();
+        exrLoader.load('/dev/Assets/studio_small_08_4k.exr', (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = texture; // Oświetlenie
+            scene.environmentIntensity = 0.8;
+        }, undefined, (err) => {
+            console.error('Błąd ładowania EXR:', err);
+        });
+
+        // === MEBLE I WYPOSAŻENIE ===
+        const loader = new GLTFLoader();
+
+        // Funkcja pomocnicza do ładowania modeli z GUI
+        function loadModel(name, path, position, scale = { x: 1, y: 1, z: 1 }, rotation = { x: 0, y: 0, z: 0 }) {
+            loader.load(path, (gltf) => {
+                const model = gltf.scene;
+
+                // 1. Skalowanie
+                model.scale.set(scale.x, scale.y, scale.z);
+
+                // 2. Aktualizacja cieni
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        if (child.material) {
+                            child.material.envMapIntensity = 1.0;
+                            child.material.needsUpdate = true;
+                        }
+                    }
+                });
+
+                // 3. Pozycjonowanie (z uwzględnieniem Box3 do postawienia na podłodze, jeśli Y=0)
+                const box = new THREE.Box3().setFromObject(model);
+                const bottomOffset = box.min.y;
+
+                // Jeśli pozycja Y jest 0, to chcemy postawić na podłodze. 
+                // Jeśli jest inna (np. lampa), to ufamy użytkownikowi.
+                // Ale tutaj dla uproszczenia ustawiamy pozycję zadaną + korekta offsetu, 
+                // chyba że to lampa wisząca.
+                // Przyjmijmy prostszą strategię dla GUI: ustawiamy position.set i tyle.
+                // Użytkownik sobie wyreguluje suwakiem.
+
+                // Ale zachowajmy logikę "startową" z poprzedniego kroku
+                model.position.set(position.x, position.y, position.z);
+
+                // Jeśli to nie lampa (Y > 10), to spróbujmy postawić na ziemi
+                if (position.y < 5) {
+                    model.position.y -= bottomOffset;
+                }
+
+                // 4. Rotacja
+                model.rotation.set(rotation.x, rotation.y, rotation.z);
+
+                scene.add(model);
+
+                // === GUI DLA MODELU ===
+                const folder = gui.addFolder(name);
+
+                // Pozycja
+                folder.add(model.position, 'x', -20, 20).name('Pos X');
+                folder.add(model.position, 'y', -5, 20).name('Pos Y');
+                folder.add(model.position, 'z', -20, 20).name('Pos Z');
+
+                // Rotacja Y
+                folder.add(model.rotation, 'y', 0, Math.PI * 2).name('Rot Y');
+
+                // Skala (Uniform)
+                const config = { scale: scale.x };
+                folder.add(config, 'scale', 0.1, 10).name('Scale').onChange((v) => {
+                    model.scale.set(v, v, v);
+                });
+
+            }, undefined, (error) => console.error(`Błąd ładowania ${path}:`, error));
+        }
+
+        // 1. Fotel
+        loadModel('Fotel', '/dev/Assets/base_basic_pbr.glb', { x: 0, y: -5, z: 5.48 }, { x: 3.5, y: 3.5, z: 3.5 }, { x: 0, y: 3.066, z: 0 });
+
+        // 2. Sofa (Goldilocks Fix)
+        loader.load('/dev/Assets/source/sofa.glb', (gltf) => {
+            const rawModel = gltf.scene;
+            console.log("Sofa załadowana (Goldilocks Fix)!");
+
+            // 1. Reset skali wewnętrznej (ważne dla centrowania)
+            rawModel.scale.set(1, 1, 1);
+
+            // 2. Naprawa Pivota (Centrowanie geometrii)
+            const box = new THREE.Box3().setFromObject(rawModel);
+            const center = box.getCenter(new THREE.Vector3());
+            rawModel.position.sub(center);
+
+            // 3. Wrapper (Grupa) - to nim sterujemy
+            const sofaGroup = new THREE.Group();
+            sofaGroup.add(rawModel);
+
+            // Ustawiamy Grupę w docelowym miejscu (Zapisane ustawienia)
+            sofaGroup.position.set(12.56, 2.1, 9.84);
+            sofaGroup.rotation.y = 3.148;
+
+            // 4. Skala "Goldilocks" (Zapisana: 2.1)
+            const startScale = 2.1;
+            sofaGroup.scale.set(startScale, startScale, startScale);
+
+            scene.add(sofaGroup);
+
+            // Przywracamy cienie
+            rawModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
+                }
+            });
+
+            // 5. GUI dla Sofy (Range 0.1 - 10)
+            const folder = gui.addFolder('Sofa (Adjust)');
+            folder.add(sofaGroup.position, 'x', -20, 20).name('Pos X');
+            folder.add(sofaGroup.position, 'y', -5, 20).name('Pos Y');
+            folder.add(sofaGroup.position, 'z', -20, 20).name('Pos Z');
+            folder.add(sofaGroup.rotation, 'y', 0, Math.PI * 2).name('Rot Y (Axis)');
+
+            // Suwak Skali (Średni Zakres)
+            const config = { scale: startScale };
+            folder.add(config, 'scale', 0.1, 10.0).step(0.1).name('Scale').onChange(v => {
+                sofaGroup.scale.set(v, v, v);
+            });
+
+        }, undefined, (error) => console.error('Błąd sofy:', error));
+
+        // 3. Stół
+        loadModel('Stół', '/dev/Assets/source/table.glb', { x: 6.76, y: 0, z: 5.76 }, { x: 3.5, y: 3.5, z: 3.5 }, { x: 0, y: 0.88, z: 0 });
+
+        // 4. Lampa
+        loadModel('Lampa', '/dev/Assets/source/lampa.glb', { x: -5.92, y: 15.7, z: 9.32 }, { x: 3.5, y: 3.5, z: 3.5 }, { x: 0, y: 0, z: 0 });
+
+
+        // === EKRAN KINOWY (TV) ===
+        // Wideo
+        const video = document.createElement('video');
+        video.src = '/dev/Assets/TV/light_projector_free_download/Light Projector (Free Download)/Movie Projector.mp4';
+        video.loop = true;
+        video.muted = false;
+        video.playsInline = true;
+
+        const videoTexture = new THREE.VideoTexture(video);
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+        // Ekran (Plane) - 32x18
+        const screenGeo = new THREE.PlaneGeometry(32, 18);
+        const screenMat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
+        const screen = new THREE.Mesh(screenGeo, screenMat);
+        screen.position.set(-0.12, 10.5, -19.9);
+        scene.add(screen);
+
+        // GUI dla Ekranu
+        const screenFolder = gui.addFolder('Ekran Kinowy');
+        screenFolder.add(screen.position, 'x', -20, 20).name('Pos X');
+        screenFolder.add(screen.position, 'y', -5, 20).name('Pos Y');
+        screenFolder.add(screen.position, 'z', -20, 20).name('Pos Z');
+        screenFolder.add(screen.rotation, 'y', 0, Math.PI * 2).name('Rot Y');
+        const screenConfig = { scale: 1 };
+        screenFolder.add(screenConfig, 'scale', 0.1, 5).name('Scale').onChange(v => screen.scale.set(v, v, v));
+
+
+        // Obsługa przycisku
+        document.getElementById('playButton').addEventListener('click', (e) => {
+            e.stopPropagation(); // Nie uruchamiaj pointer lock
+            video.play().then(() => {
+                document.getElementById('playButton').style.display = 'none';
+            }).catch(err => console.error("Błąd odtwarzania wideo:", err));
+        });
+
+        // === ANIMACJA ===
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // --- LOGIKA RUCHU (FPS) ---
+            const direction = new THREE.Vector3();
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
+
+            // Pobierz kierunek patrzenia (tylko w poziomie)
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+
+            // Oblicz wektor "w prawo" (Standardowy wektor Right: Forward x Up)
+            right.crossVectors(forward, camera.up).normalize();
+
+            // Obsługa klawiszy
+            if (keys.w) direction.add(forward);
+            if (keys.s) direction.sub(forward);
+            if (keys.a) direction.sub(right); // A idzie w lewo
+            if (keys.d) direction.add(right); // D idzie w prawo
+
+            // Aplikuj ruch
+            if (direction.lengthSq() > 0) {
+                direction.normalize().multiplyScalar(playerParams.speed);
+                camera.position.add(direction);
+            }
+
+            // --- KOLIZJE (Prosta fizyka) ---
+            // 1. Stała wysokość
+            camera.position.y = playerParams.height;
+
+            // 2. Ograniczenie ścian (Room bounds - padding)
+            const halfW = 20 - 0.5;
+            const halfD = 20 - 0.5;
+
+            camera.position.x = Math.max(-halfW, Math.min(halfW, camera.position.x));
+            camera.position.z = Math.max(-halfD, Math.min(halfD, camera.position.z));
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // === RESIZE ===
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+
+</html>
