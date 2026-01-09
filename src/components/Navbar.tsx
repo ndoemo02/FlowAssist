@@ -22,7 +22,7 @@ export const Navbar = () => {
                 <div className="hidden md:flex gap-8 text-sm font-medium text-white/70">
                     <button onClick={() => setView('HOME')} className={`hover:text-white transition-colors ${currentView === 'HOME' ? 'text-white' : ''}`}>Technologia</button>
                     <a href="#industries" className="hover:text-white transition-colors">Branże</a>
-                    <a href="#contact" className="hover:text-white transition-colors">Kontakt</a>
+                    <a href="/contact" className="hover:text-white transition-colors">Kontakt</a>
                     <a
                         href="/dev/"
                         className="hover:text-white transition-colors text-blue-400"
