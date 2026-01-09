@@ -16,22 +16,39 @@ export default function Contact3D() {
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
 
     // State for writing logic
-    const cursorRef = useRef({ x: 100, y: 100 }) // Margins
+    const cursorRef = useRef({ x: 100, y: 100 })
     const targetPosRef = useRef(new THREE.Vector3(0, 0, 0))
-    const isWritingRef = useRef(false)
+
+    // Streaming & Animation Queue
+    const lastResultIndexRef = useRef(0)
+    const localBufferRef = useRef('')
+    const queueRef = useRef<string[]>([])
+    const isProcessingQueueRef = useRef(false)
 
     // Constants
     const CANVAS_SIZE = 1024
     const PLANE_WIDTH = 10
-    const PLANE_HEIGHT = 14 // A4 aspect roughly
+    const PLANE_HEIGHT = 14
 
     useEffect(() => {
         if (!containerRef.current) return
 
-        // 1. Scene Setup
+        // === 1. SETUP SCENE ===
         const scene = new THREE.Scene()
-        scene.background = new THREE.Color(0x111111) // Dark background
         sceneRef.current = scene
+
+        // Video Background (Earth/Space)
+        const video = document.createElement('video');
+        video.src = '/dev/Assets/TV/light_projector_free_download/Light Projector (Free Download)/Pixabay Files/Earth - 29760.mp4';
+        video.crossOrigin = 'anonymous';
+        video.loop = true;
+        video.muted = true;
+        video.play().catch(e => console.warn("Video autoplay blocked", e));
+
+        const videoTexture = new THREE.VideoTexture(video);
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+        scene.background = videoTexture;
+        scene.environment = videoTexture; // Reflections
 
         const camera = new THREE.PerspectiveCamera(45, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.1, 100)
         camera.position.set(0, 15, 10)
@@ -45,18 +62,18 @@ export default function Contact3D() {
         containerRef.current.appendChild(renderer.domElement)
         rendererRef.current = renderer
 
-        // 2. Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
-        scene.add(ambientLight)
+        // === 2. LIGHTING ===
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.4)
+        scene.add(ambLight)
 
-        const dirLight = new THREE.DirectionalLight(0xfffaed, 1.5)
+        const dirLight = new THREE.DirectionalLight(0xfffaed, 2.0)
         dirLight.position.set(5, 10, 5)
         dirLight.castShadow = true
         dirLight.shadow.mapSize.width = 2048
         dirLight.shadow.mapSize.height = 2048
         scene.add(dirLight)
 
-        // 3. Paper (Plane + CanvasTexture)
+        // === 3. PAPER (CANVAS) ===
         const canvas = document.createElement('canvas')
         canvas.width = CANVAS_SIZE
         canvas.height = CANVAS_SIZE
@@ -64,106 +81,92 @@ export default function Contact3D() {
         ctxRef.current = ctx
 
         if (ctx) {
-            // Initialize Paper styling
-            ctx.fillStyle = '#f4e4bc' // Parchment color
+            ctx.fillStyle = '#f4e4bc'
             ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
-
-            // Lines (Decoration)
+            // Liniature
             ctx.strokeStyle = 'rgba(0,0,0,0.1)'
             ctx.lineWidth = 2
             for (let y = 100; y < CANVAS_SIZE; y += 80) {
-                ctx.beginPath()
-                ctx.moveTo(100, y)
-                ctx.lineTo(CANVAS_SIZE - 100, y)
-                ctx.stroke()
+                ctx.beginPath(); ctx.moveTo(100, y); ctx.lineTo(CANVAS_SIZE - 100, y); ctx.stroke();
             }
-
-            // Text Styles
             ctx.font = '60px "Brush Script MT", cursive'
-            ctx.fillStyle = '#2b1d0e' // Dark brown ink
-            ctx.textBaseline = 'bottom' // Write on liniature
+            ctx.fillStyle = '#1a0b00'
+            ctx.textBaseline = 'bottom'
         }
 
         const texture = new THREE.CanvasTexture(canvas)
         textureRef.current = texture
 
+        // FIX ORIENTATION: Rotate texture 180 deg to match user view
+        texture.center.set(0.5, 0.5)
+        texture.rotation = Math.PI
+        // Note: When texture is rotated 180, Top-Left of canvas becomes Bottom-Right of mesh UV?
+        // Standard Plane UV: (0,0) BotLeft, (1,1) TopRight.
+        // Canvas (0,0) TopLeft -> UV (0,1).
+        // If we rotate texture 180, UV (0,1) moves to (1,0).
+        // Effectively, writing at 0,0 (Top Left) will appear at Bottom Right?
+        // We might need to invert our mapping logic or valid via trial.
+        // Let's stick to standard logic and rely on rotation for visual correctness.
+
         const planeGeo = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT)
         const planeMat = new THREE.MeshStandardMaterial({
             map: texture,
-            roughness: 0.6,
+            roughness: 0.2,
+            metalness: 0.1,
             side: THREE.DoubleSide
         })
         const paperPlane = new THREE.Mesh(planeGeo, planeMat)
-        paperPlane.rotation.x = -Math.PI / 2 // Lie flat
+        paperPlane.rotation.x = -Math.PI / 2 // Flat on floor
         paperPlane.receiveShadow = true
         scene.add(paperPlane)
 
-        // 4. Pen Loading
+        // === 4. PEN ===
         const loader = new GLTFLoader()
         const pivotGroup = new THREE.Group()
         penPivotRef.current = pivotGroup
         scene.add(pivotGroup)
-
-        // Initial rest position
-        pivotGroup.position.set(5, 1, 5)
+        pivotGroup.position.set(5, 1, 5) // Resting pos
 
         loader.load('/Flowassist3d/free_quill-pen__lowpoly.glb', (gltf: any) => {
-            const model = gltf.scene
+            const model = gltf.scene as THREE.Group
             model.traverse((child: any) => {
                 if (child.isMesh) {
                     child.castShadow = true
                     child.receiveShadow = true
                 }
             })
+            model.scale.set(50, 50, 50)
 
-            // Adjust scaling
-            const scale = 50.0
-            model.scale.set(scale, scale, scale)
-
-            // Calculate bounding box to find tip
+            // Pivot Adjustment
             const box = new THREE.Box3().setFromObject(model)
-            const height = box.max.y - box.min.y
-
-            // Assume Nib is at the bottom (min.y) or top (max.y) depending on orientation.
-            // Usually pens stand up or lie down. Let's assume standard upright or angled.
-            // We want the Pivot (0,0,0 of PivotGroup) to be the Nib.
-            // So we move the mesh opposite to where the nib is.
-
-            // For this specific model, we might need trial and error, but generally:
-            // Move mesh up by half height if origin is center, or align min.y to 0.
-            // Let's align center of bottom:
             const center = new THREE.Vector3()
             box.getCenter(center)
-
-            // Move mesh such that the Tip is at (0,0,0)
-            // Assuming Tip is at (center.x, box.min.y, center.z) - typical for standing objects
+            // Align Tip to (0,0,0) of pivot group
             model.position.sub(new THREE.Vector3(center.x, box.min.y, center.z))
 
-            // Rotate pen to writing angle
-            model.rotation.x = Math.PI / 4 // Tilt 45 degrees
+            // Initial Rotation for writing
+            model.rotation.x = Math.PI / 4
+            model.rotation.y = Math.PI // Orient to hand??
 
             pivotGroup.add(model)
+        }, undefined, (e) => console.error(e))
 
-        }, undefined, (err: any) => console.error(err))
-
-
-        // 5. Animation Loop
+        // === 5. ANIMATION LOOP ===
         const animate = () => {
             requestAnimationFrame(animate)
 
             if (penPivotRef.current) {
-                // Smooth Lerp to target position
-                penPivotRef.current.position.lerp(targetPosRef.current, 0.1)
+                // Smooth movement
+                penPivotRef.current.position.lerp(targetPosRef.current, 0.15)
 
-                // Optional: Bobbing effect when writing?
-                // Or basic breathing when idle
+                // Idle breathing if not writing (optional)
             }
 
+            // video texture update usually auto
             renderer.render(scene, camera)
         }
         animate()
 
-        // Handle Resize
         const handleResize = () => {
             if (containerRef.current && cameraRef.current && rendererRef.current) {
                 cameraRef.current.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight
@@ -175,20 +178,15 @@ export default function Contact3D() {
 
         return () => {
             window.removeEventListener('resize', handleResize)
-            if (containerRef.current && rendererRef.current) {
-                containerRef.current.removeChild(rendererRef.current.domElement)
-            }
+            video.pause()
+            if (containerRef.current && rendererRef.current) containerRef.current.removeChild(rendererRef.current.domElement)
             renderer.dispose()
         }
 
     }, [])
 
 
-    // State for streaming logic
-    const lastResultIndexRef = useRef(0)
-    const localBufferRef = useRef('')
-
-    // Voice Integration
+    // === WRITING LOGIC ===
     const [isListening, setIsListening] = useState(false)
     const recognitionRef = useRef<any>(null)
 
@@ -198,117 +196,154 @@ export default function Contact3D() {
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition()
                 recognition.continuous = true
-                recognition.interimResults = true // Enable streaming
-                recognition.lang = 'pl-PL' // Polish
+                recognition.interimResults = true
+                recognition.lang = 'pl-PL'
 
                 recognition.onresult = (event: any) => {
                     const resultIndex = event.resultIndex
                     const result = event.results[resultIndex]
-
                     if (!result) return
 
                     const transcript = result[0].transcript
-                    const isFinal = result.isFinal
 
-                    // Logic to extract ONLY the new part of the transcript
-                    // Since interim results keep updating the whole sentence, 
-                    // we compare with our local buffer for this sentence.
-
-                    // If index changed, it means we have a new sentence starting
                     if (resultIndex !== lastResultIndexRef.current) {
                         localBufferRef.current = ''
                         lastResultIndexRef.current = resultIndex
                     }
 
-                    // Get new content by slicing what we already processed
                     let newContent = ''
                     if (transcript.length > localBufferRef.current.length) {
                         newContent = transcript.slice(localBufferRef.current.length)
                     }
 
                     if (newContent) {
-                        updateWriting(newContent)
+                        // Queue characters
+                        newContent.split('').forEach(char => queueRef.current.push(char))
+                        processQueue()
                         localBufferRef.current = transcript
                     }
-
-                    // If final, clear buffer for next sentence (though index change handles it mostly)
-                    if (isFinal) {
-                        // localBufferRef.current = '' // Optional: Let index change handle it
-                    }
                 }
 
-                recognition.onerror = (event: any) => {
-                    console.error('Speech recognition error', event.error)
-                    // Don't auto-stop on no-speech
-                    if (event.error === 'no-speech') return;
-                    setIsListening(false)
+                recognition.onerror = (e: any) => {
+                    if (e.error !== 'no-speech') setIsListening(false)
                 }
-
-                recognition.onend = () => {
-                    // Auto restart to keep "live" feel
-                    // But verify component is still mounted/user wants it
-                    // We rely on isListening state, but inside callback state might be stale
-                    // Use ref or just let button handle restart if truly stopped.
-                    // The requirement is "stream", so let's try to keep it alive.
-                    // IMPORTANT: Infinite loop risk if error occurs.
-                }
-
                 recognitionRef.current = recognition
             }
         }
     }, [])
 
-    // Logic: Update Writing and Move Pen (Updated for character streaming)
-    const updateWriting = (textFragment: string) => {
-        if (!ctxRef.current || !textureRef.current) return
+    const processQueue = () => {
+        if (isProcessingQueueRef.current || queueRef.current.length === 0) return
+        isProcessingQueueRef.current = true
 
+        const char = queueRef.current.shift()
+        if (char) {
+            animateWritingStep(char, () => {
+                isProcessingQueueRef.current = false
+                if (queueRef.current.length > 0) processQueue()
+            })
+        } else {
+            isProcessingQueueRef.current = false
+        }
+    }
+
+    const animateWritingStep = (char: string, onComplete: () => void) => {
+        if (!ctxRef.current || !textureRef.current) { onComplete(); return }
+
+        // 1. Measure & Calculate Position
         const ctx = ctxRef.current
+        const measure = ctx.measureText(char)
 
-        // Split by characters to support smooth streaming of partial words
-        const chars = textFragment.split('')
+        if (cursorRef.current.x + measure.width > CANVAS_SIZE - 100) {
+            cursorRef.current.x = 100
+            cursorRef.current.y += 80
+        }
 
-        chars.forEach(char => {
-            let measure = ctx.measureText(char)
+        // 2. Move Pen Target first
+        // We want pen to be AT the writing point.
+        // Current X/Y is Top-Left of char. 
+        // We want pen tip at Center of char? Or start? Let's say center.
+        const centerX = cursorRef.current.x + measure.width / 2
+        const centerY = cursorRef.current.y
 
-            // Wrap line if needed
-            if (cursorRef.current.x + measure.width > CANVAS_SIZE - 100) {
-                cursorRef.current.x = 100
-                cursorRef.current.y += 80 // Line height
+        const target3D = mapCanvasToWorld(centerX, centerY)
+        targetPosRef.current.copy(target3D)
+
+        // 3. Wait for "Move" then "Write"
+        // Simplified: 50ms movement time
+        setTimeout(() => {
+            // Draw
+            ctx.fillText(char, cursorRef.current.x, cursorRef.current.y)
+            textureRef.current!.needsUpdate = true
+            cursorRef.current.x += measure.width
+
+            // Pen Wiggle (Scratch effect)
+            if (penPivotRef.current) {
+                // Quick rotation z bump
+                penPivotRef.current.rotation.z += 0.05
+                setTimeout(() => { if (penPivotRef.current) penPivotRef.current.rotation.z -= 0.05 }, 50)
             }
 
-            // Draw Text
-            ctx.fillText(char, cursorRef.current.x, cursorRef.current.y)
+            // Next Char Delay
+            // Space is faster (no scratch), letters take time
+            const delay = char === ' ' ? 20 : 50
+            setTimeout(onComplete, delay)
 
-            // Update Cursor
-            cursorRef.current.x += measure.width
-        })
+        }, 50)
+    }
 
-        // Update Texture
-        textureRef.current.needsUpdate = true
+    const mapCanvasToWorld = (cx: number, cy: number) => {
+        // Texture is Rotated 180 (Math.PI)
+        // Center (0.5, 0.5)
+        // UV (0,0) -> Rotated -> (1,1) ?
 
-        // Map Cursor to 3D World (Same logic as before)
-        const u = cursorRef.current.x / CANVAS_SIZE
-        const v = 1.0 - (cursorRef.current.y / CANVAS_SIZE)
+        // Standard Mapping:
+        // u = x / W
+        // v = 1 - y / H
 
-        const x3D = (u - 0.5) * PLANE_WIDTH
-        const z3D = -(v - 0.5) * PLANE_HEIGHT
+        // If texture is rotated 180:
+        // Visual (u, v) matches Canvas (1-u, 1-v)?
+        // So simply: if we write at Top-Left (0,0), it appears at Bottom-Right if pure 180?
+        // To fix this, we need to know WHERE on the 3D plane correct visual appears.
 
-        const HOVER_HEIGHT = 0.5
-        targetPosRef.current.set(x3D, HOVER_HEIGHT, z3D)
+        // Let's assume we want visual to be correct for user looking at plane.
+        // If we rotate texture 180, the IMAGE is flipped.
+        // If we want Pen to match Visual, we must map coordinate to the FLIPPED location.
 
-        // Trigger pen shake/write effect
-        if (penPivotRef.current) {
-            // Quick dip or shake
-            // We can animate this in the generic loop, but here we can add "impulse"
-        }
+        // Let's assume Standard Plane (No Rotation except -90 X).
+        // +X is Right. -X is Left.
+        // -Z is Top. +Z is Bottom.
+
+        // Texture Rotation = PI means:
+        // Pixel at (0,0) [TopLeft] is rendered at UV(0,0) rotated around center -> UV(1,1) [TopRight of Mesh?]
+
+        // Let's simplify:
+        // Calculate standard UV.
+        // Rotate that UV by 180 around 0.5,0.5.
+        // Then map to World.
+
+        let u = cx / CANVAS_SIZE
+        let v = 1.0 - (cy / CANVAS_SIZE)
+
+        // Rotate UV 180 (Inverse)
+        // u' = 1 - u
+        // v' = 1 - v
+        const uRot = 1.0 - u
+        const vRot = 1.0 - v
+
+        // Map to Plane (-W/2 to W/2)
+        // Left is 0 -> -Width/2
+        const x3D = (uRot - 0.5) * PLANE_WIDTH
+        const z3D = -(vRot - 0.5) * PLANE_HEIGHT // Standard mapping V->Y
+
+        return new THREE.Vector3(x3D, 0.5, z3D)
     }
 
     const toggleListening = () => {
         if (!recognitionRef.current) {
-            alert("Twoja przeglądarka nie obsługuje Web Speech API (tylko Chrome/Edge).")
+            alert("Brak Web Speech API.")
             return
         }
-
         if (isListening) {
             recognitionRef.current.stop()
             setIsListening(false)
@@ -321,19 +356,30 @@ export default function Contact3D() {
     return (
         <div className="w-full h-full relative" ref={containerRef}>
             <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-4 z-10">
-                <div className="bg-black/50 backdrop-blur px-4 py-2 rounded text-white text-sm mb-2">
-                    {recognitionRef.current ? "Powiedz coś, a FlowAssistant to zapisze." : "Brak obsługi głosowej w tej przeglądarce."}
+                <div className="bg-black/80 backdrop-blur-md px-6 py-3 rounded-2xl text-white text-sm mb-2 border border-white/10 shadow-xl">
+                    {recognitionRef.current ? "Mówię, piszę, tworzę... (Nasłuchiwanie aktywne)" : "Twoja przeglądarka nie słyszy."}
                 </div>
                 <button
                     onClick={toggleListening}
-                    className={`px-8 py-3 rounded-full font-bold transition-all shadow-lg ${isListening
+                    className={`px-8 py-4 rounded-full font-bold transition-all shadow-[0_0_30px_rgba(0,0,0,0.5)] transform hover:scale-105 active:scale-95 flex items-center gap-3 border border-white/10 ${isListening
                         ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                        : 'bg-blue-600 hover:bg-blue-500'
-                        } text-white`}
+                        : 'bg-zinc-900 hover:bg-zinc-800 text-white'
+                        }`}
                 >
-                    {isListening ? '🛑 Zatrzymaj Nasłuch' : '🎤 Rozpocznij Pisanie Głosem'}
+                    {isListening ? (
+                        <>
+                            <span className="w-3 h-3 bg-white rounded-full animate-bounce"></span>
+                            Zatrzymaj
+                        </>
+                    ) : (
+                        <>
+                            <span>🎤</span> Rozpocznij Pisanie
+                        </>
+                    )}
                 </button>
             </div>
+            {/* Overlay Vignette for cinematic look */}
+            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,black_100%)] opacity-50"></div>
         </div>
     )
 }
