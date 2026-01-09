@@ -286,6 +286,64 @@
         room.receiveShadow = true;
         scene.add(room);
 
+        // === FLOOR PANELS (Wood Texture) ===
+        const floorCanvas = document.createElement('canvas');
+        floorCanvas.width = 512;
+        floorCanvas.height = 512;
+        const floorCtx = floorCanvas.getContext('2d');
+
+        if (floorCtx) {
+            // Wood base color
+            floorCtx.fillStyle = '#3a2a1a';
+            floorCtx.fillRect(0, 0, 512, 512);
+
+            // Wood grain lines
+            floorCtx.strokeStyle = '#2a1a0a';
+            floorCtx.lineWidth = 2;
+            for (let i = 0; i < 50; i++) {
+                const y = Math.random() * 512;
+                const xStart = 0;
+                const xEnd = 512;
+                floorCtx.beginPath();
+                floorCtx.moveTo(xStart, y);
+                // Slight curve for natural look
+                floorCtx.bezierCurveTo(
+                    128, y + (Math.random() - 0.5) * 10,
+                    384, y + (Math.random() - 0.5) * 10,
+                    xEnd, y + (Math.random() - 0.5) * 5
+                );
+                floorCtx.stroke();
+            }
+
+            // Panel seams (vertical)
+            floorCtx.strokeStyle = '#1a0a00';
+            floorCtx.lineWidth = 3;
+            for (let x = 0; x < 512; x += 64) {
+                floorCtx.beginPath();
+                floorCtx.moveTo(x, 0);
+                floorCtx.lineTo(x, 512);
+                floorCtx.stroke();
+            }
+        }
+
+        const floorTexture = new THREE.CanvasTexture(floorCanvas);
+        floorTexture.wrapS = THREE.RepeatWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(10, 10); // Tile across room
+
+        const floorPanelGeo = new THREE.PlaneGeometry(roomSize.w, roomSize.d);
+        const floorPanelMat = new THREE.MeshStandardMaterial({
+            map: floorTexture,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+
+        const floorPanel = new THREE.Mesh(floorPanelGeo, floorPanelMat);
+        floorPanel.rotation.x = -Math.PI / 2; // Lie flat
+        floorPanel.position.y = 0.01; // Slightly above base floor to avoid z-fighting
+        floorPanel.receiveShadow = true;
+        scene.add(floorPanel);
+
         // === HDRI ENVIRONMENT (Tylko oświetlenie) ===
         const exrLoader = new EXRLoader();
         exrLoader.load('Assets/studio_small_08_4k.exr', (texture) => {
