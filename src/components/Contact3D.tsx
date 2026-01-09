@@ -184,69 +184,9 @@ export default function Contact3D() {
     }, [])
 
 
-    // Logic: Update Writing and Move Pen
-    const updateWriting = (text: string) => {
-        if (!ctxRef.current || !textureRef.current) return
-
-        const ctx = ctxRef.current
-        const words = text.split(' ')
-
-        words.forEach(word => {
-            const wordWithSpace = word + ' '
-            let measure = ctx.measureText(wordWithSpace)
-
-            // Wrap line if needed
-            if (cursorRef.current.x + measure.width > CANVAS_SIZE - 100) {
-                cursorRef.current.x = 100
-                cursorRef.current.y += 80 // Line height
-            }
-
-            // Draw Text
-            ctx.fillText(wordWithSpace, cursorRef.current.x, cursorRef.current.y)
-
-            // Update Cursor
-            cursorRef.current.x += measure.width
-        })
-
-        // Update Texture
-        textureRef.current.needsUpdate = true
-
-        // Map Cursor to 3D World
-        // Canvas (0..1024) -> UV (0..1) -> World (-W/2 .. W/2)
-        // Texture UV (0,0) is usually Bottom-Left for Plane... 
-        // Wait, Canvas (0,0) is Top-Left. 
-        // So Canvas Y=0 -> UV V=1. Canvas Y=1024 -> UV V=0.
-
-        const u = cursorRef.current.x / CANVAS_SIZE
-        const v = 1.0 - (cursorRef.current.y / CANVAS_SIZE)
-
-        // Plane is Width=10, Height=14. Center at (0,0,0).
-        // Left (-5) = U(0). Right (5) = U(1).
-        const x3D = (u - 0.5) * PLANE_WIDTH
-        // Top (-7 ?? No, Z axis). 
-        // Plane rotation -PI/2 means:
-        // Local X -> World X
-        // Local Y -> World -Z (Top of texture is -Z in world)
-        // Let's verify: PlaneGeometry(w, h).
-        // Vertices: usually centered.
-        // Y+ is Top. mapped to V=1.
-        // After rotation X=-90deg:
-        // World +Z is Local -Y (Base/Bottom). World -Z is Local +Y (Top).
-        // So V=1 (Top of Canvas) -> Local Y+ -> World -Z.
-        // V=0 (Bottom of Canvas) -> Local Y- -> World +Z.
-
-        // y3D (actually Z coord) = (v - 0.5) * PLANE_HEIGHT
-        // Check: v=1 -> 0.5 * H.   Map: +Z is Bottom(v0), -Z is Top(v1).
-        // Actually: v=1 (Top) should be at -Z (Top edge of paper).
-        // (1 - 0.5) * H = 0.5 H.  We want negative Z. 
-        // So formula: z3D = - (v - 0.5) * PLANE_HEIGHT
-
-        const z3D = -(v - 0.5) * PLANE_HEIGHT
-
-        // Update target position (Lift pen slightly above paper)
-        const HOVER_HEIGHT = 0.5
-        targetPosRef.current.set(x3D, HOVER_HEIGHT, z3D)
-    }
+    // State for streaming logic
+    const lastResultIndexRef = useRef(0)
+    const localBufferRef = useRef('')
 
     // Voice Integration
     const [isListening, setIsListening] = useState(false)
@@ -258,31 +198,110 @@ export default function Contact3D() {
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition()
                 recognition.continuous = true
-                recognition.interimResults = false // Only final words triggers writing
+                recognition.interimResults = true // Enable streaming
                 recognition.lang = 'pl-PL' // Polish
 
                 recognition.onresult = (event: any) => {
-                    const lastResult = event.results[event.results.length - 1]
-                    if (lastResult.isFinal) {
-                        const transcript = lastResult[0].transcript
-                        updateWriting(transcript)
+                    const resultIndex = event.resultIndex
+                    const result = event.results[resultIndex]
+
+                    if (!result) return
+
+                    const transcript = result[0].transcript
+                    const isFinal = result.isFinal
+
+                    // Logic to extract ONLY the new part of the transcript
+                    // Since interim results keep updating the whole sentence, 
+                    // we compare with our local buffer for this sentence.
+
+                    // If index changed, it means we have a new sentence starting
+                    if (resultIndex !== lastResultIndexRef.current) {
+                        localBufferRef.current = ''
+                        lastResultIndexRef.current = resultIndex
+                    }
+
+                    // Get new content by slicing what we already processed
+                    let newContent = ''
+                    if (transcript.length > localBufferRef.current.length) {
+                        newContent = transcript.slice(localBufferRef.current.length)
+                    }
+
+                    if (newContent) {
+                        updateWriting(newContent)
+                        localBufferRef.current = transcript
+                    }
+
+                    // If final, clear buffer for next sentence (though index change handles it mostly)
+                    if (isFinal) {
+                        // localBufferRef.current = '' // Optional: Let index change handle it
                     }
                 }
 
                 recognition.onerror = (event: any) => {
                     console.error('Speech recognition error', event.error)
+                    // Don't auto-stop on no-speech
+                    if (event.error === 'no-speech') return;
                     setIsListening(false)
                 }
 
                 recognition.onend = () => {
-                    // Auto restart if intended? Or just stop.
-                    if (isListening) recognition.start()
+                    // Auto restart to keep "live" feel
+                    // But verify component is still mounted/user wants it
+                    // We rely on isListening state, but inside callback state might be stale
+                    // Use ref or just let button handle restart if truly stopped.
+                    // The requirement is "stream", so let's try to keep it alive.
+                    // IMPORTANT: Infinite loop risk if error occurs.
                 }
 
                 recognitionRef.current = recognition
             }
         }
     }, [])
+
+    // Logic: Update Writing and Move Pen (Updated for character streaming)
+    const updateWriting = (textFragment: string) => {
+        if (!ctxRef.current || !textureRef.current) return
+
+        const ctx = ctxRef.current
+
+        // Split by characters to support smooth streaming of partial words
+        const chars = textFragment.split('')
+
+        chars.forEach(char => {
+            let measure = ctx.measureText(char)
+
+            // Wrap line if needed
+            if (cursorRef.current.x + measure.width > CANVAS_SIZE - 100) {
+                cursorRef.current.x = 100
+                cursorRef.current.y += 80 // Line height
+            }
+
+            // Draw Text
+            ctx.fillText(char, cursorRef.current.x, cursorRef.current.y)
+
+            // Update Cursor
+            cursorRef.current.x += measure.width
+        })
+
+        // Update Texture
+        textureRef.current.needsUpdate = true
+
+        // Map Cursor to 3D World (Same logic as before)
+        const u = cursorRef.current.x / CANVAS_SIZE
+        const v = 1.0 - (cursorRef.current.y / CANVAS_SIZE)
+
+        const x3D = (u - 0.5) * PLANE_WIDTH
+        const z3D = -(v - 0.5) * PLANE_HEIGHT
+
+        const HOVER_HEIGHT = 0.5
+        targetPosRef.current.set(x3D, HOVER_HEIGHT, z3D)
+
+        // Trigger pen shake/write effect
+        if (penPivotRef.current) {
+            // Quick dip or shake
+            // We can animate this in the generic loop, but here we can add "impulse"
+        }
+    }
 
     const toggleListening = () => {
         if (!recognitionRef.current) {
@@ -308,8 +327,8 @@ export default function Contact3D() {
                 <button
                     onClick={toggleListening}
                     className={`px-8 py-3 rounded-full font-bold transition-all shadow-lg ${isListening
-                            ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                            : 'bg-blue-600 hover:bg-blue-500'
+                        ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                        : 'bg-blue-600 hover:bg-blue-500'
                         } text-white`}
                 >
                     {isListening ? '🛑 Zatrzymaj Nasłuch' : '🎤 Rozpocznij Pisanie Głosem'}
