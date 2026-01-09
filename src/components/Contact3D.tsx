@@ -327,7 +327,10 @@ export default function Contact3D() {
         // So standard mapping works perfectly if we assume we write from Top to Bottom.
 
         const x3D = (u - 0.5) * PLANE_WIDTH
-        const z3D = -(v - 0.5) * PLANE_HEIGHT
+        // Adjust Pen Z-position to align with Ink.
+        // Pen was "higher" (further back, negative Z) than ink.
+        // Adding +1.6 moves pen "down" (closer to camera, positive Z).
+        const z3D = -(v - 0.5) * PLANE_HEIGHT + 1.6
 
         return new THREE.Vector3(x3D, 0.5, z3D)
     }
