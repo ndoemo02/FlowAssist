@@ -98,6 +98,39 @@
             }
         });
 
+        // === TOUCH CONTROLS (Mobile) ===
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].pageX;
+                touchStartY = e.touches[0].pageY;
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const touchX = e.touches[0].pageX;
+                const touchY = e.touches[0].pageY;
+
+                const deltaX = touchX - touchStartX;
+                const deltaY = touchY - touchStartY;
+
+                camera.rotation.y -= deltaX * 0.005; // Czułość dotyku
+                camera.rotation.x -= deltaY * 0.005;
+
+                // Ograniczenie patrzenia góra/dół
+                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+
+                touchStartX = touchX;
+                touchStartY = touchY;
+
+                // Zapobiegaj przewijaniu strony podczas rozglądania się
+                e.preventDefault();
+            }
+        }, { passive: false });
+
         // === OŚWIETLENIE ===
         RectAreaLightUniformsLib.init();
 
