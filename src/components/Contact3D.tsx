@@ -97,22 +97,18 @@ export default function Contact3D() {
         const texture = new THREE.CanvasTexture(canvas)
         textureRef.current = texture
 
-        // FIX ORIENTATION: Rotate texture 180 deg to match user view
-        texture.center.set(0.5, 0.5)
-        texture.rotation = Math.PI
-        // Note: When texture is rotated 180, Top-Left of canvas becomes Bottom-Right of mesh UV?
-        // Standard Plane UV: (0,0) BotLeft, (1,1) TopRight.
-        // Canvas (0,0) TopLeft -> UV (0,1).
-        // If we rotate texture 180, UV (0,1) moves to (1,0).
-        // Effectively, writing at 0,0 (Top Left) will appear at Bottom Right?
-        // We might need to invert our mapping logic or valid via trial.
-        // Let's stick to standard logic and rely on rotation for visual correctness.
+        // FIX ORIENTATION: Reset to standard.
+        // Canvas (0,0) [Top-Left] maps to Plane UV.
+        // By default Three.js flips Y for textures. 
+        // We want (0,0) of Canvas (Top-Left) to be at Top-Left of Plane (-X, -Z in 3D if rotated -90 X?)
+        // Let's stick to defaults and adjust mapping if needed. 
+        // Removing the manual 180 rotation that caused the issue.
+        // texture.rotation = Math.PI; // REMOVED
 
         const planeGeo = new THREE.PlaneGeometry(PLANE_WIDTH, PLANE_HEIGHT)
         const planeMat = new THREE.MeshStandardMaterial({
             map: texture,
-            roughness: 0.2,
-            metalness: 0.1,
+            roughness: 0.6,
             side: THREE.DoubleSide
         })
         const paperPlane = new THREE.Mesh(planeGeo, planeMat)
@@ -141,12 +137,10 @@ export default function Contact3D() {
             const box = new THREE.Box3().setFromObject(model)
             const center = new THREE.Vector3()
             box.getCenter(center)
-            // Align Tip to (0,0,0) of pivot group
             model.position.sub(new THREE.Vector3(center.x, box.min.y, center.z))
 
-            // Initial Rotation for writing
             model.rotation.x = Math.PI / 4
-            model.rotation.y = Math.PI // Orient to hand??
+            model.rotation.y = Math.PI
 
             pivotGroup.add(model)
         }, undefined, (e) => console.error(e))
@@ -156,13 +150,8 @@ export default function Contact3D() {
             requestAnimationFrame(animate)
 
             if (penPivotRef.current) {
-                // Smooth movement
                 penPivotRef.current.position.lerp(targetPosRef.current, 0.15)
-
-                // Idle breathing if not writing (optional)
             }
-
-            // video texture update usually auto
             renderer.render(scene, camera)
         }
         animate()
@@ -188,6 +177,7 @@ export default function Contact3D() {
 
     // === WRITING LOGIC ===
     const [isListening, setIsListening] = useState(false)
+    const isListeningRef = useRef(false) // Track actual intent
     const recognitionRef = useRef<any>(null)
 
     useEffect(() => {
@@ -225,8 +215,28 @@ export default function Contact3D() {
                 }
 
                 recognition.onerror = (e: any) => {
-                    if (e.error !== 'no-speech') setIsListening(false)
+                    if (e.error !== 'no-speech') {
+                        console.error(e.error);
+                        // Only stop on fatal errors, otherwise try to persist if user wants
+                        if (e.error === 'not-allowed') {
+                            setIsListening(false)
+                            isListeningRef.current = false
+                        }
+                    }
                 }
+
+                recognition.onend = () => {
+                    // Auto-restart if we are supposed to be listening
+                    if (isListeningRef.current) {
+                        console.log("Restarting speech recognition...")
+                        try {
+                            recognition.start()
+                        } catch (e) { console.error("Restart failed", e) }
+                    } else {
+                        setIsListening(false)
+                    }
+                }
+
                 recognitionRef.current = recognition
             }
         }
@@ -293,48 +303,31 @@ export default function Contact3D() {
     }
 
     const mapCanvasToWorld = (cx: number, cy: number) => {
-        // Texture is Rotated 180 (Math.PI)
-        // Center (0.5, 0.5)
-        // UV (0,0) -> Rotated -> (1,1) ?
+        // Updated Mapping without Texture Rotation
+        // Canvas (0,0) Top-Left.
+        // u = x / W (0 to 1) -> Left to Right
+        // v = 1 - y / H (1 to 0) -> Top to Bottom
 
-        // Standard Mapping:
-        // u = x / W
-        // v = 1 - y / H
+        const u = cx / CANVAS_SIZE
+        const v = 1.0 - (cy / CANVAS_SIZE)
 
-        // If texture is rotated 180:
-        // Visual (u, v) matches Canvas (1-u, 1-v)?
-        // So simply: if we write at Top-Left (0,0), it appears at Bottom-Right if pure 180?
-        // To fix this, we need to know WHERE on the 3D plane correct visual appears.
+        // Plane W=10, H=14.
+        // x3D = (u - 0.5) * W
+        // z3D = -(v - 0.5) * H  (Because Top (v=1) should be "Far" or "Near"? )
 
-        // Let's assume we want visual to be correct for user looking at plane.
-        // If we rotate texture 180, the IMAGE is flipped.
-        // If we want Pen to match Visual, we must map coordinate to the FLIPPED location.
+        // Standard Plane:
+        // Top (v=1) is +Y in local.
+        // Rot X -90 -> +Y becomes -Z (Far).
+        // So v=1 (Top of page) is -Z.
 
-        // Let's assume Standard Plane (No Rotation except -90 X).
-        // +X is Right. -X is Left.
-        // -Z is Top. +Z is Bottom.
+        // Check z3D formula:
+        // v=1 -> -(1-0.5)*H = -0.5H (Top Edge). Correct.
+        // v=0 -> -(0-0.5)*H = +0.5H (Bottom Edge). Correct.
 
-        // Texture Rotation = PI means:
-        // Pixel at (0,0) [TopLeft] is rendered at UV(0,0) rotated around center -> UV(1,1) [TopRight of Mesh?]
+        // So standard mapping works perfectly if we assume we write from Top to Bottom.
 
-        // Let's simplify:
-        // Calculate standard UV.
-        // Rotate that UV by 180 around 0.5,0.5.
-        // Then map to World.
-
-        let u = cx / CANVAS_SIZE
-        let v = 1.0 - (cy / CANVAS_SIZE)
-
-        // Rotate UV 180 (Inverse)
-        // u' = 1 - u
-        // v' = 1 - v
-        const uRot = 1.0 - u
-        const vRot = 1.0 - v
-
-        // Map to Plane (-W/2 to W/2)
-        // Left is 0 -> -Width/2
-        const x3D = (uRot - 0.5) * PLANE_WIDTH
-        const z3D = -(vRot - 0.5) * PLANE_HEIGHT // Standard mapping V->Y
+        const x3D = (u - 0.5) * PLANE_WIDTH
+        const z3D = -(v - 0.5) * PLANE_HEIGHT
 
         return new THREE.Vector3(x3D, 0.5, z3D)
     }
@@ -346,10 +339,18 @@ export default function Contact3D() {
         }
         if (isListening) {
             recognitionRef.current.stop()
+            isListeningRef.current = false
             setIsListening(false)
         } else {
-            recognitionRef.current.start()
-            setIsListening(true)
+            try {
+                recognitionRef.current.start()
+                isListeningRef.current = true
+                setIsListening(true)
+            } catch (e) {
+                console.warn("Already started", e)
+                isListeningRef.current = true
+                setIsListening(true)
+            }
         }
     }
 
