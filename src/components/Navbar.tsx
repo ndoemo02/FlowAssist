@@ -23,12 +23,12 @@ export const Navbar = () => {
                     <button onClick={() => setView('HOME')} className={`hover:text-white transition-colors ${currentView === 'HOME' ? 'text-white' : ''}`}>Technologia</button>
                     <a href="#industries" className="hover:text-white transition-colors">Branże</a>
                     <a href="#contact" className="hover:text-white transition-colors">Kontakt</a>
-                    <button
-                        onClick={() => setView('DEV_PANEL')}
-                        className={`hover:text-white transition-colors ${currentView === 'DEV_PANEL' ? 'text-blue-400' : ''}`}
+                    <a
+                        href="/dev/"
+                        className="hover:text-white transition-colors text-blue-400"
                     >
                         Dev Panel
-                    </button>
+                    </a>
                 </div>
             </div>
         </nav>
