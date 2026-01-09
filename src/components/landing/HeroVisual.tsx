@@ -4,7 +4,7 @@ import { MessageCircle, BarChart2, Plus } from 'lucide-react'
 
 export default function HeroVisual() {
     return (
-        <div className="relative w-[300px] h-[600px] md:w-[350px] md:h-[700px] bg-zinc-900 border-8 border-zinc-800 rounded-[3rem] shadow-2xl overflow-hidden">
+        <div className="relative w-full max-w-[300px] md:max-w-[400px] h-auto aspect-[1/2] bg-zinc-900 border-8 border-zinc-800 rounded-[2.5rem] md:rounded-[3rem] shadow-2xl overflow-hidden mx-auto">
             {/* Screen Content */}
             <div className="absolute inset-0 bg-black flex flex-col relative overflow-hidden">
                 {/* Status Bar */}

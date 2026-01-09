@@ -26,16 +26,16 @@ export default function Home() {
             <TubesBackground />
 
             {/* --- HERO SECTION --- */}
-            <section className="relative pt-32 pb-20 px-6 max-w-7xl mx-auto min-h-screen flex flex-col md:flex-row items-center justify-between gap-12 z-10">
+            <section className="relative pt-32 pb-20 px-6 max-w-7xl mx-auto min-h-[90vh] flex flex-col lg:flex-row items-center justify-between gap-16 lg:gap-8 z-10">
 
                 {/* Text Content */}
-                <div className="flex-1 text-center md:text-left">
+                <div className="flex-1 text-center lg:text-left max-w-2xl lg:max-w-none w-full">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-medium text-white/70 mb-6 backdrop-blur">
                         <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                         Nowa generacja AI
                     </div>
 
-                    <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-2xl">
+                    <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight drop-shadow-2xl tracking-tight">
                         Obsługa klienta, <br />
                         zarządzanie i analiza <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
@@ -43,22 +43,22 @@ export default function Home() {
                         </span>
                     </h1>
 
-                    <p className="text-lg text-slate-300/80 mb-10 max-w-xl leading-relaxed font-light mx-auto md:mx-0">
+                    <p className="text-lg md:text-xl text-slate-300/80 mb-10 max-w-xl leading-relaxed font-light mx-auto lg:mx-0">
                         System, który odbiera rozmowy, porządkuje działania i pokazuje realne dane. Zwiększ efektywność swojej firmy dzięki AI.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                        <button className="px-8 py-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all transform hover:scale-105">
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <button className="px-8 py-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all transform hover:scale-105 active:scale-95">
                             Umów Konsultację
                         </button>
-                        <button className="px-8 py-4 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-white font-medium text-lg backdrop-blur-sm transition-colors">
+                        <button className="px-8 py-4 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 text-white font-medium text-lg backdrop-blur-sm transition-colors active:scale-95">
                             Zobacz Demo
                         </button>
                     </div>
                 </div>
 
                 {/* Visual Content */}
-                <div className="flex-1 flex justify-center md:justify-end relative">
+                <div className="flex-1 flex justify-center lg:justify-end relative w-full lg:w-auto mt-8 lg:mt-0">
                     <HeroVisual />
                 </div>
             </section>
