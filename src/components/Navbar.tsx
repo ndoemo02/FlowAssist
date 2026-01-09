@@ -35,6 +35,9 @@ export const Navbar = () => {
                             <a href="/dev/v2/" className="block px-4 py-3 hover:bg-white/10 text-sm text-gray-300 hover:text-white transition-colors">
                                 V2: Living Room
                             </a>
+                            <a href="/dev/v3/" className="block px-4 py-3 hover:bg-white/10 text-sm text-gray-300 hover:text-white transition-colors">
+                                V3: HDRI Preview
+                            </a>
                         </div>
                     </div>
                     <a

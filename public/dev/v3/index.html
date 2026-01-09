@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FreeFlowXR – Dev Panel V3 (HDRI Preview)</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // Scene
+        const scene = new THREE.Scene();
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 10);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // HDRI Loader
+        const exrLoader = new EXRLoader();
+        const startPath = '/dev/Assets/studio_small_08_8k.exr';
+
+        const params = {
+            envIntensity: 1.0,
+            bgBlur: 0.0,
+            exposure: 1.0,
+            rotation: 0
+        };
+
+        const gui = new GUI();
+        gui.title('HDRI Settings');
+        gui.add(params, 'envIntensity', 0, 10).name('Env Intensity').onChange(updateEnv);
+        gui.add(params, 'bgBlur', 0, 1).name('Blur').onChange(updateEnv);
+        gui.add(params, 'exposure', 0, 5).name('Exposure').onChange(v => renderer.toneMappingExposure = v);
+        gui.add(params, 'rotation', 0, Math.PI * 2).name('Rotation').onChange(v => scene.backgroundRotation.y = scene.environmentRotation.y = v);
+
+        function updateEnv() {
+            scene.environmentIntensity = params.envIntensity;
+            scene.backgroundBlurriness = params.bgBlur;
+        }
+
+        // Load 8k output
+        exrLoader.load(startPath, (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.background = texture;
+            scene.environment = texture;
+
+            console.log('HDRI loaded:', startPath);
+        }, (progress) => {
+            const p = (progress.loaded / progress.total * 100).toFixed(0);
+            console.log(`Loading HDRI: ${p}%`);
+        }, (err) => {
+            console.error('Error loading HDRI', err);
+        });
+
+        // Add a reflective sphere to see reflections clearly
+        const sphereGeo = new THREE.SphereGeometry(2, 64, 64);
+        const sphereMat = new THREE.MeshStandardMaterial({
+            roughness: 0,
+            metalness: 1,
+            color: 0xffffff
+        });
+        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+        scene.add(sphere);
+
+        // Animate
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
