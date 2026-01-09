@@ -29,6 +29,12 @@ export const Navbar = () => {
                     >
                         Dev Panel
                     </a>
+                    <a
+                        href="/test.html"
+                        className="hover:text-white transition-colors text-green-400"
+                    >
+                        Test 3D
+                    </a>
                 </div>
             </div>
         </nav>
