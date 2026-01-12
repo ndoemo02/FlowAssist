@@ -21,7 +21,7 @@ export default function Testimonials() {
 
     return (
         <section className="w-full py-20 px-6 max-w-7xl mx-auto z-10 relative">
-            <h2 className="text-4xl font-bold text-center text-white mb-16">Testimoniał</h2>
+            <h2 className="text-4xl font-bold text-center text-white mb-16">Opinie klientów</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
                 {testimonials.map((t, i) => (

@@ -27,15 +27,6 @@ export default function Features() {
                 Strony WWW dla Twojej Firmy
             </h2>
 
-            <div className="flex justify-center gap-6 mb-20">
-                <button className="px-8 py-3 rounded-full bg-green-500 hover:bg-green-600 text-black font-bold text-lg transition-transform hover:scale-105 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-                    Umów Konsultację
-                </button>
-                <button className="px-8 py-3 rounded-full border border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 text-white font-medium text-lg backdrop-blur-sm transition-colors">
-                    Zobacz Demo
-                </button>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-slate-300">
                 {features.map((f, i) => (
                     <div key={i} className="flex flex-col items-start gap-4 p-6 rounded-2xl bg-gradient-to-br from-zinc-900/80 to-black/50 border border-white/5 hover:border-green-500/30 transition-all group">
