@@ -32,7 +32,7 @@ const INITIAL_UNITS: UnitData[] = [
 export const useShowcaseStore = create<ShowcaseStore>((set) => ({
     units: INITIAL_UNITS,
     selectedUnitId: null,
-    logs: ['System initialized.', 'Map data loaded.', 'Units on standby.'],
+    logs: ['System aktywny', 'Mapa załadowana'],
 
     selectUnit: (id) => set({ selectedUnitId: id }),
 

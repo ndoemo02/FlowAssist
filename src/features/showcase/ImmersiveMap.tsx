@@ -59,17 +59,21 @@ function MapModel() {
     );
 }
 
+// Flaga DEV - ustaw na false w produkcji
+const DEV_MODE = false;
+
 function SystemLogs() {
     const logs = useShowcaseStore((state) => state.logs);
 
     return (
-        <div className="absolute top-24 right-6 w-80 font-mono text-xs pointer-events-none z-10 flex flex-col items-end gap-1">
-            {logs.map((log, i) => (
+        <div className="absolute top-32 md:top-24 right-4 md:right-6 w-auto max-w-[200px] md:max-w-xs font-mono text-[10px] md:text-xs pointer-events-none z-10 flex flex-col items-end gap-1">
+            {logs.slice(-3).map((log, i) => (
                 <motion.div
                     key={i}
                     initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-black/60 backdrop-blur-md border-r-2 border-cyan-500 px-3 py-1 text-cyan-100"
+                    animate={{ opacity: 0.8, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="bg-black/70 backdrop-blur-sm border-r-2 border-cyan-500/50 px-2 py-1 text-cyan-200 truncate max-w-full"
                 >
                     {log}
                 </motion.div>
@@ -89,9 +93,12 @@ export default function ImmersiveMap() {
 
     return (
         <div className="w-full h-screen bg-slate-950 relative">
-            <div className="fixed top-0 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 z-[999999] font-bold border-2 border-white shadow-xl">
-                DEBUG: UI LAYER ACTIVE
-            </div>
+            {/* Debug banner - tylko w trybie DEV */}
+            {DEV_MODE && (
+                <div className="fixed top-0 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 z-[999999] font-bold border-2 border-white shadow-xl">
+                    DEBUG: UI LAYER ACTIVE
+                </div>
+            )}
             <SystemLogs />
 
             {/* HUD Overlay */}
@@ -141,7 +148,8 @@ export default function ImmersiveMap() {
                     target={[0, 0, 0]}
                 />
 
-                <Stats className="!left-auto !right-0 !top-auto !bottom-0" />
+                {/* Stats tylko w trybie DEV */}
+                {DEV_MODE && <Stats className="!left-auto !right-0 !top-auto !bottom-0" />}
             </Canvas>
 
             {/* Bottom Interface */}
