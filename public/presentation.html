@@ -262,8 +262,8 @@
 
         function initParticleText() {
             const isMobile = window.innerWidth < 768;
-            const pointMultiplier = isMobile ? 550.0 : 300.0;
-            const alphaBoost = isMobile ? "2.0" : "1.0";
+            const pointMultiplier = isMobile ? 400.0 : 300.0;
+            const alphaBoost = isMobile ? "0.6" : "1.0";
 
             const vertexShader = `
             uniform float uTime, uProgress, uShineProgress, uGlobalAlpha; uniform vec2 uMouse;
@@ -298,7 +298,7 @@
                 float shine = smoothstep(1.0, 0.0, distX);
                 vec3 gold = vec3(1.0, 0.85, 0.4);
                 
-                vColor = baseColor + (gold * shine * 1.5);
+                vColor = baseColor + (gold * shine * 1.2);
                 vAlpha = smoothstep(0.0, 0.2, uProgress) * uGlobalAlpha * ${alphaBoost};
             }`;
 
@@ -366,9 +366,9 @@
             });
 
             particleSystem = new THREE.Points(geometry, material);
-            // Wyłączenie rotacji, aby napis leżał płasko dzięki współrzędnym pX, pY, pZ
-            // particleSystem.rotation.x = -Math.PI / 2;
-            particleSystem.position.set(0, 0, -1.0);
+            // Lekkie pochylenie napisu
+            particleSystem.rotation.x = -0.4;
+            particleSystem.position.set(0, 0.5, -0.5);
             scene.add(particleSystem);
         }
 
