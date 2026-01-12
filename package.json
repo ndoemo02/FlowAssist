@@ -15,6 +15,7 @@
         "@types/three": "^0.182.0",
         "clsx": "^2.1.0",
         "framer-motion": "^11.0.0",
+        "framer-motion-3d": "^12.4.13",
         "gapitoken": "^0.1.5",
         "lucide-react": "^0.300.0",
         "next": "14.2.0",
