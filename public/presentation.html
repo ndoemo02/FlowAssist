@@ -263,7 +263,7 @@
         function initParticleText() {
             const isMobile = window.innerWidth < 768;
             const pointMultiplier = isMobile ? 400.0 : 300.0;
-            const alphaBoost = isMobile ? "0.6" : "1.0";
+            const alphaBoost = isMobile ? "0.8" : "1.0"; // Lekkie rozjaśnienie
 
             const vertexShader = `
             uniform float uTime, uProgress, uShineProgress, uGlobalAlpha; uniform vec2 uMouse;
@@ -319,12 +319,12 @@
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.font = 'bold 350px sans-serif'; // Jeszcze większa czcionka (+25%)
+            ctx.font = 'bold 350px sans-serif';
             ctx.fillText("Free Flow", canvas.width / 2, canvas.height / 2 - 200);
             ctx.fillText("Mind XR", canvas.width / 2, canvas.height / 2 + 200);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height), data = imgData.data;
-            const targetPositions = [], randomPositions = [], sizes = [], scale = 0.0028; // Skala +25%
+            const targetPositions = [], randomPositions = [], sizes = [], scale = 0.0028;
 
             for (let y = 0; y < canvas.height; y += 4) {
                 for (let x = 0; x < canvas.width; x += 4) {
@@ -366,9 +366,9 @@
             });
 
             particleSystem = new THREE.Points(geometry, material);
-            // Lekkie pochylenie napisu
-            particleSystem.rotation.x = -0.4;
-            particleSystem.position.set(0, 0.5, -0.5);
+            // Poprawa orientacji (odwrócenie rotacji)
+            particleSystem.rotation.x = 0.4;
+            particleSystem.position.set(0, 0.5, 0.0); // Wycentrowanie w Z
             scene.add(particleSystem);
         }
 
