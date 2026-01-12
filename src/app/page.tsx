@@ -9,6 +9,7 @@ import ContactFooter from '@/components/landing/ContactFooter'
 import FloatingAssistant from '@/components/landing/FloatingAssistant'
 
 const TubesBackground = dynamic(() => import('@/components/TubesBackground'), { ssr: false })
+const ImmersiveMap = dynamic(() => import('@/features/showcase/ImmersiveMap'), { ssr: false })
 
 export default function Home() {
     const { currentView } = useView()
@@ -17,6 +18,14 @@ export default function Home() {
         return (
             <main className="relative w-full h-screen bg-black overflow-hidden">
                 <Dashboard3D />
+            </main>
+        )
+    }
+
+    if (currentView === 'MAP') {
+        return (
+            <main className="relative w-full h-screen bg-black overflow-hidden">
+                <ImmersiveMap />
             </main>
         )
     }

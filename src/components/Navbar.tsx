@@ -2,19 +2,39 @@
 import Image from 'next/image';
 import { useView } from '@/context/ViewProvider';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown, Monitor, Box, Image as ImageIcon } from 'lucide-react';
 
 export const Navbar = () => {
     const { currentView, setView } = useView();
     const [isOpen, setIsOpen] = useState(false);
     const [isDevOpen, setIsDevOpen] = useState(false);
+    const pathname = usePathname();
+
+    const handleMapClick = () => {
+        if (pathname === '/') {
+            setView('MAP');
+            window.history.pushState({}, '', '?view=map');
+        } else {
+            window.location.href = '/?view=map';
+        }
+        setIsOpen(false);
+    };
 
     return (
         <nav className="fixed top-0 w-full z-50 px-6 py-4 transition-all duration-300 bg-gradient-to-b from-black/80 to-transparent">
             <div className="max-w-7xl mx-auto flex justify-between items-center relative">
 
                 {/* Logo */}
-                <div className="flex items-center gap-2 cursor-pointer z-50" onClick={() => { setView('HOME'); setIsOpen(false); }}>
+                <div className="flex items-center gap-2 cursor-pointer z-50" onClick={() => {
+                    if (pathname === '/') {
+                        setView('HOME');
+                        window.history.pushState({}, '', '/');
+                    } else {
+                        window.location.href = '/';
+                    }
+                    setIsOpen(false);
+                }}>
                     <Image
                         src="/logo flowassist1.png"
                         alt="FlowAssist Logo"
@@ -26,8 +46,8 @@ export const Navbar = () => {
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex gap-8 text-sm font-medium text-white/70 items-center">
-                    <button onClick={() => setView('HOME')} className={`hover:text-white transition-colors ${currentView === 'HOME' ? 'text-white' : ''}`}>Technologia</button>
-                    <a href="#industries" className="hover:text-white transition-colors">Branże</a>
+                    <a href="/presentation.html" target="_blank" className="hover:text-white transition-colors">Technologia</a>
+                    <button onClick={handleMapClick} className={`hover:text-white transition-colors ${currentView === 'MAP' ? 'text-white' : ''}`}>Maps plan</button>
                     <a href="/contact" className="hover:text-white transition-colors">Kontakt</a>
 
                     {/* Desktop Dev Panel Dropdown */}
@@ -67,13 +87,20 @@ export const Navbar = () => {
             {/* Mobile Menu Overlay */}
             <div className={`fixed inset-0 bg-black/95 backdrop-blur-xl z-40 transition-transform duration-300 flex flex-col justify-center items-center md:hidden ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="flex flex-col gap-8 text-xl font-medium text-white/80 items-center w-full max-w-xs">
-                    <button
-                        onClick={() => { setView('HOME'); setIsOpen(false); }}
-                        className={`hover:text-white transition-colors ${currentView === 'HOME' ? 'text-white font-bold' : ''}`}
+                    <a
+                        href="/presentation.html"
+                        target="_blank"
+                        onClick={() => setIsOpen(false)}
+                        className="hover:text-white transition-colors"
                     >
                         Technologia
+                    </a>
+                    <button
+                        onClick={handleMapClick}
+                        className={`hover:text-white transition-colors ${currentView === 'MAP' ? 'text-white font-bold' : ''}`}
+                    >
+                        Maps plan
                     </button>
-                    <a href="#industries" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">Branże</a>
                     <a href="/contact" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">Kontakt</a>
 
                     {/* Mobile Dev Panel Collapsible */}
