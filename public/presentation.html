@@ -72,6 +72,30 @@
             background: rgba(255, 255, 255, 0.1);
             border-color: white;
         }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px;
+                flex-direction: column;
+                gap: 15px;
+                background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
+            }
+
+            .menu {
+                width: 100%;
+                justify-content: center;
+                gap: 20px;
+            }
+
+            .logo {
+                margin-bottom: 5px;
+            }
+
+            /* Ukrywamy panel deweloperski na mobile, bo zasłania widok */
+            .lil-gui {
+                display: none !important;
+            }
+        }
     </style>
     <script type="importmap">
         { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/" } }
@@ -81,7 +105,7 @@
 <body>
     <nav>
         <a href="/" class="logo">
-            <img src="/logo flowassist1.png" alt="Logo">
+            <img src="/logo_header.png" alt="Logo">
         </a>
         <div class="menu">
             <a href="#" class="active">Technologia</a>

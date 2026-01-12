@@ -143,20 +143,10 @@ export default function CommandConsole() {
     };
 
     return (
-        <div
-            style={{
-                position: 'fixed',
-                bottom: '80px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 2147483647,
-                width: '90%',
-                maxWidth: '600px'
-            }}
-        >
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl z-[2147483647]">
             <form
                 onSubmit={handleCommand}
-                className={`flex items-center bg-white border-4 p-2 transition-colors rounded-lg shadow-2xl ${isListening ? 'border-red-500 shadow-red-500/50' : 'border-cyan-500 shadow-cyan-500/50'}`}
+                className={`flex items-center bg-white border-2 md:border-4 p-1 md:p-2 transition-colors rounded-lg shadow-2xl ${isListening ? 'border-red-500 shadow-red-500/50' : 'border-cyan-500 shadow-cyan-500/50'}`}
             >
                 <button
                     type="button"
@@ -164,7 +154,7 @@ export default function CommandConsole() {
                         sfx.click();
                         toggleVoice();
                     }}
-                    className={`mr-2 p-3 rounded font-bold text-xl transition-all ${isListening ? 'bg-red-600 text-white animate-pulse' : (isProcessing ? 'bg-gray-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}`}
+                    className={`mr-2 p-2 md:p-3 rounded font-bold text-lg md:text-xl transition-all ${isListening ? 'bg-red-600 text-white animate-pulse' : (isProcessing ? 'bg-gray-400' : 'bg-gray-200 text-gray-700 hover:bg-gray-300')}`}
                     title="Naciśnij, aby mówić"
                 >
                     {isProcessing ? '⏳' : '🎤'}
@@ -174,14 +164,14 @@ export default function CommandConsole() {
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder={isListening ? "NASŁUCHIWANIE..." : (isProcessing ? "Przetwarzanie..." : "Wpisz lub powiedz rozkaz...")}
-                    className="flex-1 bg-transparent text-black text-lg font-bold font-mono focus:outline-none placeholder-gray-400"
+                    placeholder={isListening ? "Mów teraz..." : "Wpisz rozkaz..."}
+                    className="flex-1 bg-transparent text-black text-base md:text-lg font-bold font-mono focus:outline-none placeholder-gray-400 min-w-0"
                     readOnly={isListening || isProcessing}
                 />
 
                 <button
                     type="submit"
-                    className="ml-2 px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded font-mono uppercase tracking-wider transition-colors"
+                    className="ml-2 px-3 md:px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded font-mono uppercase tracking-wider transition-colors text-xs md:text-base"
                 >
                     Wykonaj
                 </button>

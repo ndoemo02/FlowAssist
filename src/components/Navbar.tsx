@@ -36,7 +36,7 @@ export const Navbar = () => {
                     setIsOpen(false);
                 }}>
                     <Image
-                        src="/logo flowassist1.png"
+                        src="/logo_header.png"
                         alt="FlowAssist Logo"
                         width={120}
                         height={40}

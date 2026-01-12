@@ -95,14 +95,14 @@ export default function ImmersiveMap() {
             <SystemLogs />
 
             {/* HUD Overlay */}
-            <div className="absolute top-0 left-0 w-full p-6 pointer-events-none z-10 flex justify-between items-start">
+            <div className="absolute top-0 left-0 w-full p-6 pt-28 md:pt-6 pointer-events-none z-10 flex flex-col md:flex-row justify-between items-start gap-4">
                 <div>
                     <div className="text-cyan-500 font-mono text-xs tracking-[0.2em] uppercase mb-1">Aktywna Strefa</div>
-                    <h1 className="text-white text-4xl font-bold tracking-tighter">LWÓW <span className="text-cyan-900">/</span> CENTRUM</h1>
+                    <h1 className="text-white text-3xl md:text-4xl font-bold tracking-tighter">LWÓW <span className="text-cyan-900">/</span> CENTRUM</h1>
                 </div>
-                <div className="text-right">
+                <div className="text-left md:text-right">
                     <div className="text-cyan-500 font-mono text-xs tracking-[0.2em] uppercase">Status Systemu</div>
-                    <div className="flex items-center gap-2 justify-end">
+                    <div className="flex items-center gap-2 justify-start md:justify-end">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         <span className="text-white font-mono text-sm">ONLINE</span>
                     </div>
