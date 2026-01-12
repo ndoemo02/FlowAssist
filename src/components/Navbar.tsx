@@ -28,24 +28,8 @@ export const Navbar = () => {
         <nav className="fixed top-0 w-full z-50 px-6 py-4 transition-all duration-300 bg-gradient-to-b from-black/80 to-transparent">
             <div className="max-w-7xl mx-auto flex justify-between items-center relative">
 
-                {/* Logo */}
-                <div className="flex items-center gap-2 cursor-pointer z-50" onClick={() => {
-                    if (pathname === '/') {
-                        setView('HOME');
-                        window.history.pushState({}, '', '/');
-                    } else {
-                        window.location.href = '/';
-                    }
-                    setIsOpen(false);
-                }}>
-                    <Image
-                        src="/logo_header.png"
-                        alt="FlowAssist Logo"
-                        width={120}
-                        height={40}
-                        className="object-contain"
-                    />
-                </div>
+                {/* Placeholder dla zachowania layoutu */}
+                <div className="w-[120px]" />
 
                 {/* Desktop Menu */}
                 <div className="hidden md:flex gap-8 text-sm font-medium text-white/70 items-center">
