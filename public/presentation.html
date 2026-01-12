@@ -141,10 +141,10 @@
         camera.position.set(0, 2.485996, 6.13);
         camera.rotation.x = -0.38;
 
-        // Korekta pozycji kamery na mobile (trochę dalej)
+        // Korekta pozycji kamery na mobile (wyżej i dalej)
         if (isMobile) {
-            camera.position.set(0, 2.0, 9.0);
-            camera.rotation.x = -0.15;
+            camera.position.set(0, 3.5, 10.0);
+            camera.rotation.x = -0.25;
         }
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -367,8 +367,8 @@
 
             particleSystem = new THREE.Points(geometry, material);
             // Poprawa orientacji (odwrócenie rotacji)
-            particleSystem.rotation.x = 0.4;
-            particleSystem.position.set(0, -1.2, 2.0); // Przesunięte w dół i do przodu
+            particleSystem.rotation.x = 0.35;
+            particleSystem.position.set(0, 0.3, 0.5); // Nad podestem
             scene.add(particleSystem);
         }
 
