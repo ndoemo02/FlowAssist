@@ -149,10 +149,10 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        // Ograniczenie DPR do 1.5 dla wydajności na mobile
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        // Ograniczenie DPR do 2.0 (wyższa jakość)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.toneMappingExposure = 1.6;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
@@ -380,6 +380,7 @@
         // === AWATAR PARALLAX (Clean Transparency) ===
         const avatarTexture = textureLoader.load('assets/textures/amber_new.png');
         avatarTexture.colorSpace = THREE.SRGBColorSpace;
+        avatarTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
         // Zmniejszamy wysokość o 5% zgodnie z życzeniem (jeśli było takie, tu standard 1.7m)
         const avatarHeight = 1.7;
