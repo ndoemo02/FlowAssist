@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="pl">
       <body className="bg-[#020617] text-white antialiased selection:bg-indigo-500/30">
         <div className="relative z-0 min-h-screen w-full overflow-hidden">
           <ViewProvider>

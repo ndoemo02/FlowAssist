@@ -10,6 +10,7 @@ import FloatingAssistant from '@/components/landing/FloatingAssistant'
 
 const TubesBackground = dynamic(() => import('@/components/TubesBackground'), { ssr: false })
 const ImmersiveMap = dynamic(() => import('@/features/showcase/ImmersiveMap'), { ssr: false })
+const CommandConsole = dynamic(() => import('@/features/showcase/CommandConsole'), { ssr: false })
 
 export default function Home() {
     const { currentView } = useView()
@@ -24,9 +25,12 @@ export default function Home() {
 
     if (currentView === 'MAP') {
         return (
-            <main className="relative w-full h-screen bg-black overflow-hidden">
-                <ImmersiveMap />
-            </main>
+            <>
+                <main className="relative w-full h-screen bg-black">
+                    <ImmersiveMap />
+                </main>
+                <CommandConsole />
+            </>
         )
     }
 

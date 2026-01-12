@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Unit from './Unit';
 import { useShowcaseStore } from './store';
-import CommandConsole from './CommandConsole';
+// CommandConsole przeniesiony do page.tsx
 
 function Loader() {
     const { progress } = useProgress();
@@ -156,7 +156,7 @@ export default function ImmersiveMap() {
                 </div>
             </div>
 
-            <CommandConsole />
+            {/* CommandConsole przeniesiony do page.tsx */}
         </div>
     );
 }

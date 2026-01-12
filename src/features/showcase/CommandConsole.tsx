@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import { useShowcaseStore } from './store';
 import { sfx } from '../../utils/soundEffects';
@@ -143,7 +145,17 @@ export default function CommandConsole() {
     };
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl z-[2147483647]">
+        <div
+            style={{
+                position: 'fixed',
+                bottom: '30px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 9999999,
+                width: '95%',
+                maxWidth: '42rem'
+            }}
+        >
             <form
                 onSubmit={handleCommand}
                 className={`flex items-center bg-white border-2 md:border-4 p-1 md:p-2 transition-colors rounded-lg shadow-2xl ${isListening ? 'border-red-500 shadow-red-500/50' : 'border-cyan-500 shadow-cyan-500/50'}`}
