@@ -1,10 +1,11 @@
 'use client';
 
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, useGLTF, Environment, OrbitControls } from '@react-three/drei';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 // --- CONFIG ZŁOTY KADR ---
 const DEFAULT_ROT_Y = 1.64; // Skalibrowane
@@ -71,8 +72,13 @@ function CameraTracker({ setCamPos }: { setCamPos: (pos: { x: number, y: number,
 
 // --- KOMPONENTY SCENY ---
 
-function StudioModel({ config }: { config: any }) {
+function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.Box3) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
+
+    useEffect(() => {
+        const box = new THREE.Box3().setFromObject(scene);
+        onBounds(box);
+    }, [scene, config.rotY, config.scale, onBounds]);
 
     useEffect(() => {
         scene.traverse((child) => {
@@ -193,6 +199,35 @@ function IntroText() {
     );
 }
 
+function CameraSetup({ bounds, controlsRef }: { bounds: THREE.Box3 | null; controlsRef: MutableRefObject<OrbitControlsImpl | null> }) {
+    const { camera } = useThree();
+
+    const center = useMemo(() => (bounds ? bounds.getCenter(new THREE.Vector3()) : null), [bounds]);
+    const offset = useMemo(() => {
+        if (!bounds) return null;
+        const size = bounds.getSize(new THREE.Vector3());
+        return new THREE.Vector3(0, size.y * 0.1, size.z * 0.2);
+    }, [bounds]);
+
+    useEffect(() => {
+        if (!center || !offset) return;
+        const nextPosition = center.clone().add(offset);
+        camera.position.copy(nextPosition);
+        camera.near = 0.01;
+        camera.far = 250;
+        if (camera instanceof THREE.PerspectiveCamera) {
+            camera.fov = 70;
+        }
+        camera.updateProjectionMatrix();
+        if (controlsRef.current) {
+            controlsRef.current.target.copy(center);
+            controlsRef.current.update();
+        }
+    }, [camera, center, offset, controlsRef]);
+
+    return null;
+}
+
 // --- GŁÓWNY WIDOK ---
 
 export default function V5Page() {
@@ -203,6 +238,18 @@ export default function V5Page() {
     });
 
     const [camPos, setCamPos] = useState({ x: 0, y: 0, z: 0 });
+    const [modelBounds, setModelBounds] = useState<THREE.Box3 | null>(null);
+    const controlsRef = useRef<OrbitControlsImpl | null>(null);
+
+    const handleBounds = useCallback((box: THREE.Box3) => {
+        setModelBounds(box);
+    }, []);
+
+    const controlsTarget = useMemo<[number, number, number]>(() => {
+        if (!modelBounds) return [0, 0.5, 0];
+        const center = modelBounds.getCenter(new THREE.Vector3());
+        return [center.x, center.y, center.z];
+    }, [modelBounds]);
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -224,26 +271,28 @@ export default function V5Page() {
          Kamera startuje tuż przed ekranem.
          Target ustawiony na (0, 0.5, 0) - orbita wokół centrum modelu.
       */}
-            <Canvas shadows camera={{ position: [0, 0.5, 1.0], fov: 70 }}>
+            <Canvas shadows camera={{ position: [0, 0.5, 1.0], fov: 70, near: 0.01, far: 250 }}>
                 <color attach="background" args={['#020202']} />
 
                 <LightingReveal />
 
                 <Suspense fallback={<Html><div className="text-white opacity-20 text-xs tracking-widest">LOADING...</div></Html>}>
-                    <StudioModel config={config} />
+                    <StudioModel config={config} onBounds={handleBounds} />
                     <Environment preset="night" blur={0.6} background={false} />
                 </Suspense>
 
                 <CameraTracker setCamPos={setCamPos} />
+                <CameraSetup bounds={modelBounds} controlsRef={controlsRef} />
 
                 <OrbitControls
-                    target={[0, 0.5, 0]} /* Orbita wokół centrum modelu */
+                    ref={controlsRef}
+                    target={controlsTarget} /* Orbita wokół centrum modelu */
                     enablePan={true}
                     panSpeed={1.0}
                     enableDamping
                     dampingFactor={0.05}
-                    minDistance={0.05} /* Prawie 0, można "wlecieć" w ekran */
-                    maxDistance={50}
+                    minDistance={0.1} /* Prawie 0, można "wlecieć" do środka */
+                    maxDistance={80}
                 />
             </Canvas>
         </div>
