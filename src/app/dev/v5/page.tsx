@@ -75,6 +75,48 @@ function CameraTracker({ setCamPos }: { setCamPos: (pos: { x: number, y: number,
 function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.Box3) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
 
+    // AUDYT ROOM - wypisz wszystkie meshe i ich wymiary
+    useEffect(() => {
+        console.log('=== 🎬 AUDYT V5 STUDIO ROOM ===');
+        const meshes: { name: string; width: number; height: number; depth: number; pos: string }[] = [];
+
+        scene.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                const mesh = child as THREE.Mesh;
+                const box = new THREE.Box3().setFromObject(mesh);
+                const size = box.getSize(new THREE.Vector3());
+
+                meshes.push({
+                    name: mesh.name,
+                    width: parseFloat(size.x.toFixed(3)),
+                    height: parseFloat(size.y.toFixed(3)),
+                    depth: parseFloat(size.z.toFixed(3)),
+                    pos: `(${mesh.position.x.toFixed(2)}, ${mesh.position.y.toFixed(2)}, ${mesh.position.z.toFixed(2)})`
+                });
+            }
+        });
+
+        // Sortuj po nazwie
+        meshes.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Wyświetl jako tabelę
+        console.table(meshes);
+
+        // Podświetl ekrany
+        const screens = meshes.filter(m =>
+            m.name.toLowerCase().includes('screen') ||
+            m.name.toLowerCase().includes('monitor') ||
+            m.name.toLowerCase().includes('display') ||
+            m.name.toLowerCase().includes('tv')
+        );
+        if (screens.length > 0) {
+            console.log('=== 📺 ZNALEZIONE EKRANY ===');
+            console.table(screens);
+        }
+
+        console.log('=== KONIEC AUDYTU ===');
+    }, [scene]);
+
     useEffect(() => {
         const box = new THREE.Box3().setFromObject(scene);
         onBounds(box);
