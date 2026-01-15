@@ -156,22 +156,82 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
                 rotation={[0, config.rotY, 0]}
                 scale={[config.scale, config.scale, config.scale]}
             />
-
-            {/* Nowa podłoga */}
-            <mesh
-                rotation={[-Math.PI / 2, 0, 0]}
-                position={[0, 0, 0]}
-                receiveShadow
-            >
-                <planeGeometry args={[200, 200]} />
-                <meshStandardMaterial
-                    color="#1A1D21"
-                    roughness={0.75}
-                    metalness={0.0}
-                    envMapIntensity={0.2}
-                />
-            </mesh>
+            {/* Podłoga usunięta dla Galaxy Theme */}
         </group>
+    );
+}
+
+// === GALAXY THEME: STAR FIELD ===
+function StarField({ count = 3000 }) {
+    const points = useRef<THREE.Points>(null);
+
+    const positions = useMemo(() => {
+        const pos = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            // Rozłóż gwiazdy w sferze
+            const radius = 50 + Math.random() * 100;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+
+            pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+            pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+            pos[i * 3 + 2] = radius * Math.cos(phi);
+        }
+        return pos;
+    }, [count]);
+
+    const sizes = useMemo(() => {
+        const s = new Float32Array(count);
+        for (let i = 0; i < count; i++) {
+            s[i] = Math.random() * 2 + 0.5;
+        }
+        return s;
+    }, [count]);
+
+    useFrame((state) => {
+        if (points.current) {
+            points.current.rotation.y = state.clock.getElapsedTime() * 0.01;
+            points.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.005) * 0.1;
+        }
+    });
+
+    return (
+        <points ref={points}>
+            <bufferGeometry>
+                <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
+                <bufferAttribute attach="attributes-size" array={sizes} count={count} itemSize={1} />
+            </bufferGeometry>
+            <pointsMaterial
+                size={0.5}
+                color="#ffffff"
+                transparent
+                opacity={0.8}
+                sizeAttenuation
+                blending={THREE.AdditiveBlending}
+            />
+        </points>
+    );
+}
+
+// === GALAXY THEME: NEBULA GLOW ===
+function NebulaGlow() {
+    const mesh = useRef<THREE.Mesh>(null);
+
+    useFrame((state) => {
+        if (mesh.current) {
+            mesh.current.rotation.z = state.clock.getElapsedTime() * 0.02;
+        }
+    });
+
+    return (
+        <mesh ref={mesh} position={[0, 0, -80]} scale={[100, 100, 1]}>
+            <planeGeometry />
+            <meshBasicMaterial
+                color="#1a0a2e"
+                transparent
+                opacity={0.6}
+            />
+        </mesh>
     );
 }
 
@@ -191,17 +251,20 @@ function LightingReveal() {
 
     return (
         <>
-            <ambientLight ref={ambientRef} intensity={0} />
+            <ambientLight ref={ambientRef} intensity={0} color="#1a0a2e" />
 
+            {/* Main spotlight - purple tint */}
             <spotLight
                 ref={spotRef}
                 position={[0, 10, -5]}
                 angle={0.8}
                 penumbra={0.5}
                 intensity={0}
+                color="#8b5cf6"
                 castShadow
             />
 
+            {/* Rim light - cosmic blue */}
             <spotLight
                 ref={floorSpotRef}
                 position={[0, 15, 0]}
@@ -209,12 +272,15 @@ function LightingReveal() {
                 angle={0.6}
                 penumbra={1.0}
                 intensity={0}
-                color="#4a5d6f"
+                color="#06b6d4"
                 distance={40}
                 decay={1.5}
             />
 
-            <pointLight position={[0, 3, 2]} intensity={2.0} color="#00aaff" distance={10} />
+            {/* Accent lights - galaxy colors */}
+            <pointLight position={[5, 3, 2]} intensity={2.0} color="#ec4899" distance={15} />
+            <pointLight position={[-5, 3, 2]} intensity={2.0} color="#8b5cf6" distance={15} />
+            <pointLight position={[0, 5, -5]} intensity={1.5} color="#06b6d4" distance={20} />
         </>
     );
 }
@@ -314,7 +380,12 @@ export default function V5Page() {
          Target ustawiony na (0, 0.5, 0) - orbita wokół centrum modelu.
       */}
             <Canvas shadows camera={{ position: [0, 0.5, 1.0], fov: 70, near: 0.01, far: 250 }}>
-                <color attach="background" args={['#020202']} />
+                {/* Galaxy Theme Background */}
+                <color attach="background" args={['#050208']} />
+
+                {/* Stars */}
+                <StarField count={5000} />
+                <NebulaGlow />
 
                 <LightingReveal />
 
@@ -328,12 +399,12 @@ export default function V5Page() {
 
                 <OrbitControls
                     ref={controlsRef}
-                    target={controlsTarget} /* Orbita wokół centrum modelu */
+                    target={controlsTarget}
                     enablePan={true}
                     panSpeed={1.0}
                     enableDamping
                     dampingFactor={0.05}
-                    minDistance={0.1} /* Prawie 0, można "wlecieć" do środka */
+                    minDistance={0.1}
                     maxDistance={80}
                 />
             </Canvas>
