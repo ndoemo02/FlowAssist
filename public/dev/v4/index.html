@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>FlowAssist - Cesium Real Estate (Fixed)</title>
+    <!-- Stabilny CDN (Cloudflare) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Error Log Overlay */
+        #error-log {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: rgba(40, 0, 0, 0.9);
+            color: #ffaaaa;
+            font-family: monospace;
+            padding: 10px;
+            overflow-y: auto;
+            display: none;
+            z-index: 9999;
+            border-top: 2px solid red;
+        }
+
+        #token-prompt {
+            position: fixed;
+            inset: 0;
+            background: #111;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            font-family: sans-serif;
+            color: white;
+        }
+
+        input {
+            padding: 15px;
+            width: 400px;
+            font-size: 16px;
+            margin: 20px 0;
+            border: 2px solid #333;
+            background: black;
+            color: white;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #00cccc;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="error-log"></div>
+
+    <div id="token-prompt">
+        <h2>Cesium Token Required</h2>
+        <input type="text" id="cesium-token" placeholder="Paste token here (eyJ...)">
+        <button onclick="run()">LAUNCH</button>
+        <p style="color:#666; font-size:12px; margin-top:20px;">Token is saved in localStorage</p>
+    </div>
+
+    <div id="cesiumContainer"></div>
+
+    <script>
+        // --- ERROR HANDLING ---
+        function logError(msg) {
+            const el = document.getElementById('error-log');
+            el.style.display = 'block';
+            el.innerHTML += `<div>[ERROR] ${msg}</div>`;
+            console.error(msg);
+        }
+        window.onerror = function (msg, url, line) {
+            logError(`${msg} (Line: ${line})`);
+        };
+
+        // --- LOGIC ---
+        const savedToken = localStorage.getItem('cesium_token');
+        if (savedToken) document.getElementById('cesium-token').value = savedToken;
+
+        function run() {
+            const token = document.getElementById('cesium-token').value.trim();
+            if (!token) return alert("Empty token!");
+            localStorage.setItem('cesium_token', token);
+
+            document.getElementById('token-prompt').style.display = 'none';
+
+            try {
+                Cesium.Ion.defaultAccessToken = token;
+
+                // Tworzymy viewer w trybie minimalnym
+                const viewer = new Cesium.Viewer('cesiumContainer', {
+                    terrainProvider: undefined, // Na start standardowa elipsoida, żeby nie crashować na terenie
+                    scene3DOnly: true,
+                    selectionIndicator: false,
+                    baseLayerPicker: false,
+                    timeline: false,
+                    animation: false,
+                    geocoder: false,
+                    homeButton: false,
+                    infoBox: false,
+                    navigationHelpButton: false
+                });
+
+                // Ukrywamy credit (dla estetyki demo, w produkcji wymagane)
+                viewer.cesiumWidget.creditContainer.style.display = 'none';
+
+                // --- STYL "ARCHITECTURAL WHITE MODEL" ---
+
+                // 1. Ziemia: Neutralna, przygaszona (Grafitowa)
+                const imageryLayer = viewer.imageryLayers.get(0);
+                imageryLayer.brightness = 0.5;
+                imageryLayer.contrast = 1.0;
+                imageryLayer.saturation = 0.2; // Lekki kolor, nie całkowite B&W
+                imageryLayer.gamma = 1.2;
+
+                // 2. Atmosfera: Czysta, błękitna mgła w oddali
+                viewer.scene.fog.density = 0.0002;
+                viewer.scene.skyAtmosphere.show = true;
+                viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#111116');
+
+                // Ustawienie czasu na noc/zmierzch dla klimatu (ale ze sztucznym światłem)
+                const now = new Date();
+                now.setHours(10); // Stałe światło dzienne dla czytelności cieni, ale na ciemnej mapie
+                viewer.clock.currentTime = Cesium.JulianDate.fromDate(now);
+
+                // Kamera startowa
+                viewer.scene.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(21.006, 52.230, 1500), // Bliżej Centrum
+                    orientation: {
+                        heading: Cesium.Math.toRadians(15.0),
+                        pitch: Cesium.Math.toRadians(-35.0),
+                        roll: 0.0
+                    }
+                });
+
+                // Próba dodania budynków ASYNC
+                addBuildings(viewer);
+
+            } catch (e) {
+                logError("CRASH IN 'run': " + e.message);
+            }
+        }
+
+        async function addBuildings(viewer) {
+            try {
+                const tileset = await Cesium.createOsmBuildingsAsync();
+                viewer.scene.primitives.add(tileset);
+
+                // 3. Budynki: Styl "Biała Makieta"
+                // Jednolity, elegancki kolor dla wszystkich budynków.
+                // Wygląda jak makieta z gipsu lub jasnego tworzywa.
+                tileset.style = new Cesium.Cesium3DTileStyle({
+                    color: {
+                        conditions: [
+                            ['true', "color('#f0f0f4')"] // Złamana biel / jasny popiel
+                        ]
+                    },
+                    show: true
+                });
+                console.log("Buildings styled: Architectural White");
+            } catch (err) {
+                logError("Failed to add OSM Buildings: " + err.message);
+                // Fallback: Może token jest zły?
+                logError("Check if your Token is valid!");
+            }
+        }
+    </script>
+</body>
+
+</html>

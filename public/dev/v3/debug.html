@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Google API NETWORK PROBE</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #111;
+            color: #0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>TEST POŁĄCZENIA Z GOOGLE API</h2>
+    <button onclick="runTest()"
+        style="padding:15px; font-size:20px; cursor:pointer; background:#fff; border:none;">URUCHOM TEST</button>
+    <div id="log" style="margin-top:20px; white-space:pre-wrap;">Oczekiwanie na test...</div>
+
+    <script>
+        const API_KEY = 'AIzaSyBu9Xn3jjFGHveHz7xmav-8R_7W4oby7a0';
+        // URL do root tilesetu Google (to jest to, co biblioteka próbuje pobrać na start)
+        const TEST_URL = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${API_KEY}`;
+
+        async function runTest() {
+            const logEl = document.getElementById('log');
+            logEl.innerText = "1. Rozpoczynam fetch do:\n" + TEST_URL + "\n...";
+
+            try {
+                const response = await fetch(TEST_URL);
+                logEl.innerText += "\n\n2. Status odpowiedzi: " + response.status + " " + response.statusText;
+
+                if (response.ok) {
+                    const data = await response.json();
+                    logEl.innerText += "\n\n3. SUKCES! Pobrane dane:\n" + JSON.stringify(data, null, 2).slice(0, 500) + "...";
+                    logEl.innerHTML += "\n\n<strong style='color:lime'>WNIOSKI: API działa poprawnie. Problem leży w bibliotece obsługującej 3D.</strong>";
+                } else {
+                    const text = await response.text();
+                    logEl.innerText += "\n\n3. BŁĄD API:\n" + text;
+                    logEl.innerHTML += "\n\n<strong style='color:red'>WNIOSKI: Klucz API lub konfiguracja chmury jest błędna.</strong>";
+                }
+            } catch (err) {
+                logEl.innerText += "\n\n3. BŁĄD SIECIOWY (CORS/Blokada):\n" + err.message;
+            }
+        }
+    </script>
+</body>
+
+</html>

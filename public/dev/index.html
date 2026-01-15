@@ -1,616 +1,561 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 
 <head>
     <meta charset="UTF-8">
-    <title>FreeFlowXR – Professional Studio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>FreeFlowXR – Panel Deweloperski</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #111;
+            background-color: #050505;
+            font-family: 'Inter', sans-serif;
         }
 
-        canvas {
-            display: block;
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+            box-sizing: border-box;
         }
-    </style>
 
-    <!-- Import Map: Używamy CDN dla stabilności -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/"
+        .logo {
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo img {
+            height: 30px;
+        }
+
+        .menu {
+            display: flex;
+            gap: 30px;
+        }
+
+        .menu a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            color: white;
+        }
+
+        .back-btn {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px;
+                flex-direction: column;
+                gap: 15px;
+                background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
+            }
+
+            .menu {
+                width: 100%;
+                justify-content: center;
+                gap: 20px;
+            }
+
+            .logo {
+                margin-bottom: 5px;
+            }
+
+            /* Ukrywamy panel deweloperski na mobile, bo zasłania widok */
+            .lil-gui {
+                display: none !important;
             }
         }
+    </style>
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/" } }
     </script>
 </head>
 
 <body>
-    <div id="overlay" style="position: absolute; top: 20px; left: 20px; z-index: 100;">
-        <button id="playButton" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Kliknij by włączyć
-            wideo</button>
-    </div>
-
-    <!-- Joystick Container -->
-    <div id="joystick-zone"
-        style="position: absolute; bottom: 80px; left: 50px; width: 120px; height: 120px; z-index: 100; touch-action: none;">
-        <div id="joystick-base"
-            style="position: relative; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%;">
-            <div id="joystick-stick"
-                style="position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer;">
-            </div>
+    <nav>
+        <a href="/" class="logo">
+            <img src="/logo_header.png" alt="Logo">
+        </a>
+        <div class="menu">
+            <a href="#" class="active">Technologia</a>
+            <a href="/?view=map">Maps plan</a>
+            <a href="/contact">Kontakt</a>
         </div>
-    </div>
-
+        <a href="/?view=map" class="back-btn">← Wróć do Mapy</a>
+    </nav>
     <script type="module">
         import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
         import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // === INICJALIZACJA SCENY ===
+        // 1. Inicjalizacja GUI
+        const gui = new GUI({ title: 'Panel Deweloperski' });
+
+        // 2. Scena, Kamera, Renderer
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x222222); // Ciemne tło
+        scene.background = new THREE.Color(0x000000);
+        // scene.fog usunięta dla efektu void
+        const clock = new THREE.Clock(); // Główny zegar sceny
 
-        // === GUI SETUP ===
-        const gui = new GUI();
-        gui.title('Studio Controls');
+        // Dostosowanie FOV dla mobile (szerszy kąt w pionie)
+        const isMobile = window.innerWidth < 768;
+        const initialFov = isMobile ? 60 : 35;
 
-        // === KAMERA (FPS) ===
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.rotation.order = 'YXZ'; // Zapobiega przechylaniu się (roll)
-        camera.position.set(0, 1.7, 5); // Wysokość oczu 1.7m
+        const camera = new THREE.PerspectiveCamera(initialFov, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 2.485996, 6.13);
+        camera.rotation.x = -0.38;
 
-        // === RENDERER ===
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        // Korekta pozycji kamery na mobile (wyżej i dalej)
+        if (isMobile) {
+            camera.position.set(0, 3.5, 10.0);
+            camera.rotation.x = -0.25;
+        }
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        // Ograniczenie DPR do 2.0 (wyższa jakość)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMappingExposure = 1.6;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        // === FPS CONTROLS (WSAD + Mouse) ===
-        const keys = { w: false, s: false, a: false, d: false };
+        // 3. Kontrolery i Post-processing
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1.2, 0);
+        controls.enableDamping = true;
+        controls.minDistance = 2;
+        controls.maxDistance = 8;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.minPolarAngle = Math.PI * 0.1;
 
-        const playerParams = {
-            height: 5.09,
-            speed: 0.31,
-            gyroEnabled: false
-        };
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 1;
+        bloomPass.strength = 1.833;
+        bloomPass.radius = 0;
 
-        const playerFolder = gui.addFolder('Player Settings');
-        playerFolder.add(playerParams, 'height', 0.1, 20.0).name('View Height');
-        playerFolder.add(playerParams, 'speed', 0.01, 2.0).name('Walk Speed');
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
 
-        // Gyroscope Toggle
-        const gyroController = playerFolder.add(playerParams, 'gyroEnabled').name('Gyroscope (Mobile)').onChange((v) => {
-            if (v && typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ requires permission
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response !== 'granted') {
-                            alert('Gyroscope permission denied');
-                            playerParams.gyroEnabled = false;
-                            gyroController.updateDisplay();
-                        }
-                    })
-                    .catch(console.error);
-            }
-        });
-
-        // Keyboard
-        document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-        document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
-
-        // Mouse Look (Pointer Lock)
-        document.body.requestPointerLock = document.body.requestPointerLock || document.body.mozRequestPointerLock;
-        document.addEventListener("click", (event) => {
-            // Ignoruj kliknięcia w GUI
-            if (event.target.closest('.lil-gui')) return;
-            document.body.requestPointerLock();
-        });
-
-        document.addEventListener("mousemove", e => {
-            if (document.pointerLockElement === document.body) {
-                camera.rotation.y -= e.movementX * 0.002;
-                camera.rotation.x -= e.movementY * 0.002;
-
-                // Ograniczenie patrzenia góra/dół (nie łamiemy karku)
-                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-            }
-        });
-
-
-        // === JOYSTICK LOGIC ===
-        const joystick = { x: 0, y: 0, active: false };
-        const stick = document.getElementById('joystick-stick');
-        const zone = document.getElementById('joystick-zone');
-        const maxDist = 40; // Max distance form center
-
-        function handleJoystick(e) {
-            e.preventDefault();
-            const rect = zone.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            let clientX, clientY;
-            if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-
-            let dx = clientX - centerX;
-            let dy = clientY - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist > maxDist) {
-                const angle = Math.atan2(dy, dx);
-                dx = Math.cos(angle) * maxDist;
-                dy = Math.sin(angle) * maxDist;
-            }
-
-            stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-
-            // Normalize -1 to 1
-            joystick.x = dx / maxDist;
-            joystick.y = dy / maxDist;
-            joystick.active = true;
-        }
-
-        function resetJoystick() {
-            stick.style.transform = `translate(-50%, -50%)`;
-            joystick.x = 0;
-            joystick.y = 0;
-            joystick.active = false;
-        }
-
-        zone.addEventListener('mousedown', (e) => { handleJoystick(e); document.addEventListener('mousemove', handleJoystick); document.addEventListener('mouseup', endJoystick); });
-        zone.addEventListener('touchstart', (e) => { handleJoystick(e); });
-        zone.addEventListener('touchmove', handleJoystick);
-        zone.addEventListener('touchend', resetJoystick);
-
-        function endJoystick() {
-            resetJoystick();
-            document.removeEventListener('mousemove', handleJoystick);
-            document.removeEventListener('mouseup', endJoystick);
-        }
-
-
-        // === GYROSCOPE LOGIC ===
-        const deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
-        window.addEventListener('deviceorientation', (event) => {
-            if (!playerParams.gyroEnabled) return;
-            deviceOrientation.alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0; // Z
-            deviceOrientation.beta = event.beta ? THREE.MathUtils.degToRad(event.beta) : 0;   // X
-            deviceOrientation.gamma = event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0; // Y
-        });
-
-
-        // === TOUCH CONTROLS (Camera Rotation) ===
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        document.addEventListener('touchstart', (e) => {
-            // Only rotate if not touching joystick
-            if (e.target.closest('#joystick-zone')) return;
-
-            if (e.touches.length === 1) {
-                touchStartX = e.touches[0].pageX;
-                touchStartY = e.touches[0].pageY;
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchmove', (e) => {
-            if (e.target.closest('#joystick-zone')) return;
-
-            if (e.touches.length === 1) {
-                const touchX = e.touches[0].pageX;
-                const touchY = e.touches[0].pageY;
-
-                const deltaX = touchX - touchStartX;
-                const deltaY = touchY - touchStartY;
-
-                camera.rotation.y -= deltaX * 0.005;
-                camera.rotation.x -= deltaY * 0.005;
-
-                // Ograniczenie patrzenia góra/dół
-                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-
-                touchStartX = touchX;
-                touchStartY = touchY;
-
-                // Zapobiegaj przewijaniu strony podczas rozglądania się
-                // e.preventDefault(); // Commented out to allow safe scrolling if needed outside canvas, but usually good for fullscreen 3D
-            }
-        }, { passive: false });
-
-        // === OŚWIETLENIE ===
+        // 4. Światła
         RectAreaLightUniformsLib.init();
 
-        // 1. Key Light
-        const rectLight = new THREE.RectAreaLight(0xffffff, 2.0, 2, 2);
-        rectLight.position.set(-2, 2, 2);
-        rectLight.lookAt(0, 0.5, 0);
-        scene.add(rectLight);
+        const keyLight = new THREE.RectAreaLight(0xffffff, 0, 2, 4);
+        keyLight.position.set(-2.5, 2.5, 2.5);
+        keyLight.lookAt(0, 1.0, 0);
+        scene.add(keyLight);
 
-        // 2. Fill Light
-        const spotLight = new THREE.SpotLight(0xffddaa, 50);
-        spotLight.position.set(3, 3, 2);
-        spotLight.angle = Math.PI / 6;
-        spotLight.penumbra = 0.5;
-        spotLight.castShadow = true;
-        spotLight.shadow.bias = -0.0001;
-        scene.add(spotLight);
+        const fillLight = new THREE.SpotLight(0xffffff, 0);
+        fillLight.position.set(3, 2, 2);
+        fillLight.angle = Math.PI / 4;
+        fillLight.penumbra = 1;
+        fillLight.castShadow = true;
+        scene.add(fillLight);
 
-        // 3. Rim Light
-        const rimLight = new THREE.DirectionalLight(0xccddff, 1.5);
-        rimLight.position.set(0, 3, -3);
+        const rimLight = new THREE.SpotLight(0x3ac8ff, 2);
+        rimLight.position.set(0, 2.2, -3);
+        rimLight.lookAt(0, 1.0, 0);
+        rimLight.penumbra = 0.5;
         scene.add(rimLight);
 
-        // === ROOM ENVIRONMENT (Studio 40x20x40) ===
-        const roomSize = { w: 40, h: 20, d: 40 };
-        const roomGeo = new THREE.BoxGeometry(roomSize.w, roomSize.h, roomSize.d);
+        // bounceLight już jest zadeklarowane później, ale tutaj były definicje innych świateł.
+        // Czekaj, bounceLight jest osobno w linii 134. Tutaj zmieniamy tylko key, fill, rim.
 
-        // Materiały: Ciemnoszary beton studyjny
-        const wallMat = new THREE.MeshStandardMaterial({
-            color: 0x222222,
-            roughness: 0.5,
-            side: THREE.BackSide
-        });
-        const floorMat = new THREE.MeshStandardMaterial({
-            color: 0x222222,
-            roughness: 0.8,
-            side: THREE.BackSide
-        });
+        const hemiLight = new THREE.HemisphereLight(0x222222, 0x000000, 0);
+        scene.add(hemiLight);
 
-        const roomMaterials = [
-            wallMat, // Right
-            wallMat, // Left
-            wallMat, // Top (Sufit)
-            floorMat, // Bottom (Podłoga)
-            wallMat, // Front
-            wallMat  // Back
-        ];
+        // 5. Obiekty Sceny
+        const textureLoader = new THREE.TextureLoader();
 
-        const room = new THREE.Mesh(roomGeo, roomMaterials);
-        room.position.set(0, roomSize.h / 2, 0); // Podłoga na y=0
-        room.receiveShadow = true;
-        scene.add(room);
+        // Podłoga
+        const floorGeo = new THREE.PlaneGeometry(10, 10);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.2 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
 
-        // === FLOOR PANELS (Wood Texture) ===
-        const floorCanvas = document.createElement('canvas');
-        floorCanvas.width = 512;
-        floorCanvas.height = 512;
-        const floorCtx = floorCanvas.getContext('2d');
+        // Pokój i sufit usunięte (Void Stage)
 
-        if (floorCtx) {
-            // Wood base color
-            floorCtx.fillStyle = '#3a2a1a';
-            floorCtx.fillRect(0, 0, 512, 512);
+        // Ekran (Drzewo w jakości HD)
+        const screenWidth = 4.8, screenHeight = 2.7, screenDepth = 1.2;
 
-            // Wood grain lines
-            floorCtx.strokeStyle = '#2a1a0a';
-            floorCtx.lineWidth = 2;
-            for (let i = 0; i < 50; i++) {
-                const y = Math.random() * 512;
-                const xStart = 0;
-                const xEnd = 512;
-                floorCtx.beginPath();
-                floorCtx.moveTo(xStart, y);
-                // Slight curve for natural look
-                floorCtx.bezierCurveTo(
-                    128, y + (Math.random() - 0.5) * 10,
-                    384, y + (Math.random() - 0.5) * 10,
-                    xEnd, y + (Math.random() - 0.5) * 5
-                );
-                floorCtx.stroke();
-            }
+        const screenGeo = new THREE.BoxGeometry(screenWidth, screenHeight, screenDepth);
+        const treeTexture = textureLoader.load('/assets/textures/FREEFLOW_LOGO.png');
+        treeTexture.colorSpace = THREE.SRGBColorSpace;
 
-            // Panel seams (vertical)
-            floorCtx.strokeStyle = '#1a0a00';
-            floorCtx.lineWidth = 3;
-            for (let x = 0; x < 512; x += 64) {
-                floorCtx.beginPath();
-                floorCtx.moveTo(x, 0);
-                floorCtx.lineTo(x, 512);
-                floorCtx.stroke();
-            }
-        }
-
-        const floorTexture = new THREE.CanvasTexture(floorCanvas);
-        floorTexture.wrapS = THREE.RepeatWrapping;
-        floorTexture.wrapT = THREE.RepeatWrapping;
-        floorTexture.repeat.set(10, 10); // Tile across room
-
-        const floorPanelGeo = new THREE.PlaneGeometry(roomSize.w, roomSize.d);
-        const floorPanelMat = new THREE.MeshStandardMaterial({
-            map: floorTexture,
-            roughness: 0.7,
-            metalness: 0.1
+        // BasicMaterial zapewnia brak cieniowania (samoświecenie) = realna jakość grafiki
+        const panelMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const screenFrontMat = new THREE.MeshBasicMaterial({
+            map: treeTexture,
+            transparent: true,
+            toneMapped: false // Ważne: ignoruje tone mapping, zachowuje oryginalne kolory
         });
 
-        const floorPanel = new THREE.Mesh(floorPanelGeo, floorPanelMat);
-        floorPanel.rotation.x = -Math.PI / 2; // Lie flat
-        floorPanel.position.y = 0.01; // Slightly above base floor to avoid z-fighting
-        floorPanel.receiveShadow = true;
-        scene.add(floorPanel);
-
-        // === HDRI ENVIRONMENT (Tylko oświetlenie) ===
-        const exrLoader = new EXRLoader();
-        exrLoader.load('Assets/studio_small_08_4k.exr', (texture) => {
-            texture.mapping = THREE.EquirectangularReflectionMapping;
-            scene.environment = texture; // Oświetlenie
-            scene.environmentIntensity = 0.8;
-        }, undefined, (err) => {
-            console.error('Błąd ładowania EXR:', err);
-        });
-
-        // === MEBLE I WYPOSAŻENIE ===
-        const loader = new GLTFLoader();
-
-        // Funkcja pomocnicza do ładowania modeli z GUI
-        function loadModel(name, path, position, scale = { x: 1, y: 1, z: 1 }, rotation = { x: 0, y: 0, z: 0 }) {
-            loader.load(path, (gltf) => {
-                const model = gltf.scene;
-
-                // 1. Skalowanie
-                model.scale.set(scale.x, scale.y, scale.z);
-
-                // 2. Aktualizacja cieni
-                model.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                        if (child.material) {
-                            child.material.envMapIntensity = 1.0;
-                            child.material.needsUpdate = true;
-                        }
-                    }
-                });
-
-                // 3. Pozycjonowanie (z uwzględnieniem Box3 do postawienia na podłodze, jeśli Y=0)
-                const box = new THREE.Box3().setFromObject(model);
-                const bottomOffset = box.min.y;
-
-                // Jeśli pozycja Y jest 0, to chcemy postawić na podłodze. 
-                // Jeśli jest inna (np. lampa), to ufamy użytkownikowi.
-                // Ale tutaj dla uproszczenia ustawiamy pozycję zadaną + korekta offsetu, 
-                // chyba że to lampa wisząca.
-                // Przyjmijmy prostszą strategię dla GUI: ustawiamy position.set i tyle.
-                // Użytkownik sobie wyreguluje suwakiem.
-
-                // Ale zachowajmy logikę "startową" z poprzedniego kroku
-                model.position.set(position.x, position.y, position.z);
-
-                // Jeśli to nie lampa (Y > 10), to spróbujmy postawić na ziemi
-                if (position.y < 5) {
-                    model.position.y -= bottomOffset;
-                }
-
-                // 4. Rotacja
-                model.rotation.set(rotation.x, rotation.y, rotation.z);
-
-                scene.add(model);
-
-                // === GUI DLA MODELU ===
-                const folder = gui.addFolder(name);
-
-                // Pozycja
-                folder.add(model.position, 'x', -20, 20).name('Pos X');
-                folder.add(model.position, 'y', -5, 20).name('Pos Y');
-                folder.add(model.position, 'z', -20, 20).name('Pos Z');
-
-                // Rotacja Y
-                folder.add(model.rotation, 'y', 0, Math.PI * 2).name('Rot Y');
-
-                // Skala (Uniform)
-                const config = { scale: scale.x };
-                folder.add(config, 'scale', 0.1, 10).name('Scale').onChange((v) => {
-                    model.scale.set(v, v, v);
-                });
-
-            }, undefined, (error) => console.error(`Błąd ładowania ${path}:`, error));
-        }
-
-        // 1. Fotel
-        loadModel('Fotel', 'Assets/base_basic_pbr.glb', { x: 0, y: -5, z: 5.48 }, { x: 3.5, y: 3.5, z: 3.5 }, { x: 0, y: 3.066, z: 0 });
-
-        // 2. Sofa (Goldilocks Fix)
-        loader.load('Assets/source/sofa.glb', (gltf) => {
-            const rawModel = gltf.scene;
-            console.log("Sofa załadowana (Goldilocks Fix)!");
-
-            // 1. Reset skali wewnętrznej (ważne dla centrowania)
-            rawModel.scale.set(1, 1, 1);
-
-            // 2. Naprawa Pivota (Centrowanie geometrii)
-            const box = new THREE.Box3().setFromObject(rawModel);
-            const center = box.getCenter(new THREE.Vector3());
-            rawModel.position.sub(center);
-
-            // 3. Wrapper (Grupa) - to nim sterujemy
-            const sofaGroup = new THREE.Group();
-            sofaGroup.add(rawModel);
-
-            // Ustawiamy Grupę w docelowym miejscu (Zapisane ustawienia)
-            sofaGroup.position.set(12.56, 2.1, 9.84);
-            sofaGroup.rotation.y = 3.148;
-
-            // 4. Skala "Goldilocks" (Zapisana: 2.1)
-            const startScale = 2.1;
-            sofaGroup.scale.set(startScale, startScale, startScale);
-
-            scene.add(sofaGroup);
-
-            // Przywracamy cienie
-            rawModel.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    if (child.material.map) child.material.map.colorSpace = THREE.SRGBColorSpace;
-                }
-            });
-
-            // 5. GUI dla Sofy (Range 0.1 - 10)
-            const folder = gui.addFolder('Sofa (Adjust)');
-            folder.add(sofaGroup.position, 'x', -20, 20).name('Pos X');
-            folder.add(sofaGroup.position, 'y', -5, 20).name('Pos Y');
-            folder.add(sofaGroup.position, 'z', -20, 20).name('Pos Z');
-            folder.add(sofaGroup.rotation, 'y', 0, Math.PI * 2).name('Rot Y (Axis)');
-
-            // Suwak Skali (Średni Zakres)
-            const config = { scale: startScale };
-            folder.add(config, 'scale', 0.1, 10.0).step(0.1).name('Scale').onChange(v => {
-                sofaGroup.scale.set(v, v, v);
-            });
-
-        }, undefined, (error) => console.error('Błąd sofy:', error));
-
-        // 3. Stół
-        loadModel('Stół', 'Assets/source/table.glb', { x: 6.76, y: 0, z: 5.76 }, { x: 3.5, y: 3.5, z: 3.5 }, { x: 0, y: 0.88, z: 0 });
-
-        // 4. Lampa
-        loadModel('Lampa', 'Assets/source/lampa.glb', { x: -5.92, y: 15.7, z: 9.32 }, { x: 3.5, y: 3.5, z: 3.5 }, { x: 0, y: 0, z: 0 });
-
-
-        // === EKRAN KINOWY (TV) ===
-        // Wideo
-        const video = document.createElement('video');
-        video.src = 'Assets/TV/light_projector_free_download/Light Projector (Free Download)/Movie Projector.mp4';
-        video.loop = true;
-        video.muted = false;
-        video.playsInline = true;
-
-        const videoTexture = new THREE.VideoTexture(video);
-        videoTexture.colorSpace = THREE.SRGBColorSpace;
-
-        // Ekran (Plane) - 32x18
-        const screenGeo = new THREE.PlaneGeometry(32, 18);
-        const screenMat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
-        const screen = new THREE.Mesh(screenGeo, screenMat);
-        screen.position.set(-0.12, 10.5, -19.9);
+        const screenMaterials = [panelMat, panelMat, panelMat, panelMat, screenFrontMat, panelMat];
+        const screen = new THREE.Mesh(screenGeo, screenMaterials);
+        screen.position.set(0, 1.75, -2.5 - screenDepth / 2);
         scene.add(screen);
 
-        // GUI dla Ekranu
-        const screenFolder = gui.addFolder('Ekran Kinowy');
-        screenFolder.add(screen.position, 'x', -20, 20).name('Pos X');
-        screenFolder.add(screen.position, 'y', -5, 20).name('Pos Y');
-        screenFolder.add(screen.position, 'z', -20, 20).name('Pos Z');
-        screenFolder.add(screen.rotation, 'y', 0, Math.PI * 2).name('Rot Y');
-        const screenConfig = { scale: 1 };
-        screenFolder.add(screenConfig, 'scale', 0.1, 5).name('Scale').onChange(v => screen.scale.set(v, v, v));
+        const bounceLight = new THREE.RectAreaLight(0x2fc7ff, 4.38, screenWidth, screenHeight);
+        bounceLight.position.set(0, 1.75, -2.4); // Zaktualizowana pozycja światła
+        bounceLight.lookAt(0, 1.0, 2.0);
+        bounceLight.rotation.y = Math.PI;
+        scene.add(bounceLight);
 
+        // === SZKLANY PODEST ===
+        const platformWidth = screenWidth;
+        const platformDepth = 3.0;
+        const platformHeight = 0.4; // Podwyższony podest
+        const platformGeo = new THREE.BoxGeometry(platformWidth, platformHeight, platformDepth);
 
-        // Obsługa przycisku
-        document.getElementById('playButton').addEventListener('click', (e) => {
-            e.stopPropagation(); // Nie uruchamiaj pointer lock
-            video.play().then(() => {
-                document.getElementById('playButton').style.display = 'none';
-            }).catch(err => console.error("Błąd odtwarzania wideo:", err));
+        const platformMat = new THREE.MeshStandardMaterial({
+            color: 0x080808, // Prawie czarny, lekko widoczny
+            roughness: 0.8,
+            metalness: 0.2
         });
 
-        // === ANIMACJA ===
+        const platform = new THREE.Mesh(platformGeo, platformMat);
+        // Pozycja: Środek podestu = -2.5 + 1.5 = -1.0 (styka się z ekranem)
+        platform.position.set(0, platformHeight / 2, -1.0);
+        scene.add(platform);
+
+        // === SYSTEM CZĄSTECZKOWY (Hologram) ===
+
+
+        let particleSystem;
+        // const clock usuwamy stąd
+
+
+        function initParticleText() {
+            const isMobile = window.innerWidth < 768;
+            const pointMultiplier = isMobile ? 400.0 : 300.0;
+            const alphaBoost = isMobile ? "0.8" : "1.0";
+
+            const vertexShader = `
+            uniform float uTime, uProgress, uShineProgress, uGlobalAlpha; uniform vec2 uMouse;
+            attribute vec3 aRandomPosition; attribute float aSize;
+            varying vec3 vColor; varying float vAlpha;
+            void main() {
+                float t = smoothstep(0.0, 1.0, uProgress);
+                vec3 currentPos = mix(aRandomPosition, position, t);
+                
+                if (uProgress > 0.9) { 
+                    float dist = distance(currentPos.xz, uMouse * 4.0);
+                    if (dist < 1.0) {
+                        currentPos.y += (1.0 - dist) * 0.1;
+                    }
+                }
+
+                vec4 mvPosition = modelViewMatrix * vec4(currentPos, 1.0);
+                gl_Position = projectionMatrix * mvPosition;
+                gl_PointSize = aSize * (${pointMultiplier.toFixed(1)} / -mvPosition.z);
+                
+                float mixFactor = (position.z + 2.0) * 0.25;
+                vec3 cyan = vec3(0.0, 1.0, 1.0);
+                vec3 white = vec3(1.0, 1.0, 1.0);
+                vec3 baseColor = mix(cyan, white, mixFactor);
+                
+                float sweepPos = mix(-5.0, 5.0, uShineProgress);
+                float distX = abs(currentPos.x - sweepPos);
+                float shine = smoothstep(1.0, 0.0, distX);
+                vec3 gold = vec3(1.0, 0.85, 0.4);
+                
+                vColor = baseColor + (gold * shine * 1.2);
+                vAlpha = smoothstep(0.0, 0.2, uProgress) * uGlobalAlpha * ${alphaBoost};
+            }`;
+
+            const fragmentShader = `
+            varying vec3 vColor; varying float vAlpha;
+            void main() {
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float dist = length(coord);
+                if (dist > 0.5) discard;
+                float strength = pow(1.0 - (dist * 2.0), 2.0);
+                gl_FragColor = vec4(vColor, strength * vAlpha);
+            }`;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.font = 'bold 350px sans-serif';
+            ctx.fillText("FlowAssist", canvas.width / 2, canvas.height / 2 - 100);
+
+            ctx.font = 'bold 200px sans-serif';
+            ctx.fillText("Smart Business", canvas.width / 2, canvas.height / 2 + 150);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height), data = imgData.data;
+
+            const targetPositions = [];
+            const randomPositions = [];
+            const sizes = [];
+
+            // Skala zmniejszona o 10% (z 0.0020 na 0.0018)
+            const scale = 0.0018;
+            // Przesunięcie w głąb sceny, aby napis był na środku podestu (pod drzewem)
+            // Zmieniono na -0.2, aby 'obniżyć' napis (przesunąć w stronę kamery)
+            const zOffset = -0.2;
+
+            for (let y = 0; y < canvas.height; y += 2) {
+                for (let x = 0; x < canvas.width; x += 2) {
+                    const i = (y * canvas.width + x) * 4;
+                    if (data[i + 3] > 128) {
+                        const pX = (x - canvas.width / 2) * scale;
+                        const pZ = (y - canvas.height / 2) * scale;
+                        const pY = 0.45;
+
+                        targetPositions.push(pX, pY, pZ + zOffset);
+                        randomPositions.push(
+                            (Math.random() - 0.5) * 5.0,
+                            1.0 + Math.random() * 3.0,
+                            (Math.random() - 0.5) * 5.0
+                        );
+                        sizes.push(Math.random() * 0.03 + 0.01);
+                    }
+                }
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(targetPositions, 3));
+            geometry.setAttribute('aRandomPosition', new THREE.Float32BufferAttribute(randomPositions, 3));
+            geometry.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1));
+
+            const material = new THREE.ShaderMaterial({
+                vertexShader, fragmentShader,
+                uniforms: {
+                    uTime: { value: 0 },
+                    uProgress: { value: 0 },
+                    uShineProgress: { value: 0 },
+                    uGlobalAlpha: { value: 1.0 },
+                    uMouse: { value: new THREE.Vector2(0, 0) }
+                },
+                transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+            });
+
+            particleSystem = new THREE.Points(geometry, material);
+            particleSystem.rotation.x = 0.35;
+            particleSystem.position.set(0, 0.3, 0.5);
+            scene.add(particleSystem);
+        }
+
+        initParticleText();
+
+
+        // Tło (Niebo) usunięte (Void Stage)
+
+        // === AWATAR PARALLAX (Clean Transparency) ===
+        const avatarTexture = textureLoader.load('/assets/textures/amber_new.png');
+        avatarTexture.colorSpace = THREE.SRGBColorSpace;
+        avatarTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+        // Zmniejszamy wysokość o 5% zgodnie z życzeniem (jeśli było takie, tu standard 1.7m)
+        const avatarHeight = 1.7;
+        // Obliczymy szerokość dynamicznie po załadowaniu, startujemy z 1.0
+
+        const avatarGeo = new THREE.PlaneGeometry(1, 1);
+        const avatarMat = new THREE.MeshBasicMaterial({
+            map: avatarTexture,
+            transparent: true,
+            opacity: 0, // Startujemy od 0
+            side: THREE.DoubleSide,
+            depthWrite: false // Ważne dla czystej transparencji na tle
+        });
+
+        const avatar = new THREE.Mesh(avatarGeo, avatarMat);
+        avatar.position.set(0, 0.4 + avatarHeight / 2, -1.0);
+
+        // Grupa dla efektu paralaksy (pozwala na precyzyjne obracanie)
+        const avatarGroup = new THREE.Group();
+        avatarGroup.add(avatar);
+        scene.add(avatarGroup);
+
+        // Dopasowanie proporcji po załadowaniu
+        function updateAvatarAspect() {
+            const image = avatarTexture.image;
+            if (image && image.width && image.height) {
+                const aspect = image.width / image.height;
+                const width = avatarHeight * aspect;
+                avatar.geometry.dispose();
+                avatar.geometry = new THREE.PlaneGeometry(width, avatarHeight);
+                console.log("Avatar aspect updated:", aspect, width);
+            }
+        }
+
+        avatarTexture.onload = updateAvatarAspect;
+
+        // Check if already loaded (cached)
+        if (avatarTexture.image) updateAvatarAspect();
+
+        const mouse = new THREE.Vector2();
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // 6. Konfiguracja GUI
+        const visibilityFolder = gui.addFolder('Intensywność Elementów');
+
+        // Logika restartu animacji
+        let animationStartTime = 0;
+        const animControl = {
+            restart: () => {
+                animationStartTime = clock.getElapsedTime();
+                if (particleSystem) {
+                    particleSystem.material.uniforms.uGlobalAlpha.value = 1.0;
+                }
+                avatarMat.opacity = 0;
+            }
+        };
+        gui.add(animControl, 'restart').name('▶ Restart Animacji');
+
+        const avatarFolder = gui.addFolder('Ustawienia Awatara');
+        // Opcjonalnie: można dodać kontrolę skali lub jasności, na razie puste lub usunięte
+        // avatarFolder.add(avatarMat, 'opacity', 0, 1).name('Przezroczystość (Debug)');
+
+        visibilityFolder.add({ logoOpacity: 100 }, 'logoOpacity', 0, 100, 1).name('Logo (Drzewo) %').onChange((value) => {
+            screenFrontMat.opacity = value / 100;
+            screen.visible = value > 0;
+        });
+
+        const textParams = {
+            duration: 1000,
+            fadeOutStart: 12.01,
+            manualFade: false
+        };
+
+        visibilityFolder.add(textParams, 'fadeOutStart', 0, 20).name('Zniknij po (s)');
+
+        visibilityFolder.add({
+            toggle: () => {
+                if (!particleSystem) return;
+                textParams.manualFade = !textParams.manualFade;
+            }
+        }, 'toggle').name('Pokaż/Ukryj Napis');
+
+        const lightFolder = gui.addFolder('Oświetlenie Studyjne');
+        lightFolder.add(keyLight, 'intensity', 0, 5).name('Światło Kluczowe');
+        lightFolder.add(fillLight, 'intensity', 0, 2).name('Światło Wypełniające');
+        lightFolder.add(rimLight, 'intensity', 0, 2).name('Światło Tylne (Rim)');
+        lightFolder.add(bounceLight, 'intensity', 0, 10).name('Odbicie od Ekranu');
+        lightFolder.add(hemiLight, 'intensity', 0, 1).name('Światło Otoczenia');
+
+        const bloomFolder = gui.addFolder('Efekt Poświaty (Bloom)');
+        bloomFolder.add(bloomPass, 'threshold', 0, 1).name('Próg Jasności');
+        bloomFolder.add(bloomPass, 'strength', 0, 5).name('Intensywność');
+        bloomFolder.add(bloomPass, 'radius', 0, 2).name('Promień Rozmycia');
+
+        const camFolder = gui.addFolder('Ustawienia Kamery');
+        camFolder.add(camera.position, 'y', 0.5, 10).name('Wysokość');
+        camFolder.add(camera.position, 'z', 2, 8).name('Oddalenie');
+        camFolder.add(camera.rotation, 'x', -0.5, 0.5).name('Kąt Nachylenia');
+
+        // Pętla animacji
         function animate() {
             requestAnimationFrame(animate);
+            const globalTime = clock.getElapsedTime();
+            const time = globalTime - animationStartTime; // Czas lokalny dla animacji
 
-            // --- LOGIKA RUCHU (FPS) ---
-            const direction = new THREE.Vector3();
-            const forward = new THREE.Vector3();
-            const right = new THREE.Vector3();
+            if (particleSystem) {
+                particleSystem.material.uniforms.uTime.value = time;
+                particleSystem.material.uniforms.uMouse.value.copy(mouse);
 
-            // Pobierz kierunek patrzenia (tylko w poziomie)
-            camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
+                // Animacja wejścia (0 do 2.5s)
+                let progress = Math.min(time * 0.4, 1.0);
+                particleSystem.material.uniforms.uProgress.value = progress;
 
-            // Oblicz wektor "w prawo" (Standardowy wektor Right: Forward x Up)
-            right.crossVectors(forward, camera.up).normalize();
+                // Efekt Shine (cykliczny co jakiś czas)
+                if (progress >= 1.0) {
+                    // Shine co 5 sekund
+                    let shineTime = (time - 2.5) % 5.0;
+                    if (shineTime < 1.0) {
+                        particleSystem.material.uniforms.uShineProgress.value = shineTime;
+                    } else {
+                        particleSystem.material.uniforms.uShineProgress.value = -1.0; // poza zakresem
+                    }
+                }
 
-            // Obsługa klawiszy
-            if (keys.w) direction.add(forward);
-            if (keys.s) direction.sub(forward);
-            if (keys.a) direction.sub(right); // A idzie w lewo
-            if (keys.d) direction.add(right); // D idzie w prawo
+                // Animacja ZNIKANIA (Fade Out) kontrolowana przez suwak
+                let targetAlpha = 1.0;
+                if (time > textParams.fadeOutStart && !textParams.manualFade) {
+                    targetAlpha = 0.0;
+                } else if (textParams.manualFade) {
+                    targetAlpha = 0.0;
+                }
 
-            // Obsługa Joysticka
-            if (joystick.active) {
-                // Joystick Y maps to Forward/Backward (inverted: up is -1)
-                const joyForward = new THREE.Vector3().copy(forward);
-                const joyRight = new THREE.Vector3().copy(right);
+                particleSystem.material.uniforms.uGlobalAlpha.value = THREE.MathUtils.lerp(
+                    particleSystem.material.uniforms.uGlobalAlpha.value,
+                    targetAlpha,
+                    0.05
+                );
 
-                // joystick.y is -1 (top) to 1 (bottom). Walking forward needs negative joystick.y
-                joyForward.multiplyScalar(-joystick.y);
-                joyRight.multiplyScalar(joystick.x);
+                // --- LOGIKA AWATARA ---
+                // Jeśli napis zniknął (targetAlpha == 0 i alpha jest bliska 0) LUB minął czas
+                // Przyjmijmy prostą logikę czasową: FadeOutStart + 1.0s
 
-                direction.add(joyForward);
-                direction.add(joyRight);
+                if (time > textParams.fadeOutStart + 1.0) {
+                    // Pojawianie się awatara
+                    avatarMat.opacity = THREE.MathUtils.lerp(avatarMat.opacity, 1.0, 0.05);
+                } else {
+                    // Ukrywanie awatara
+                    avatarMat.opacity = THREE.MathUtils.lerp(avatarMat.opacity, 0.0, 0.1);
+                }
             }
 
-            // Obsługa Żyroskopu
-            if (playerParams.gyroEnabled) {
-                // Simple gyro implementation (can be improved with Quaternion slerp)
-                // This is a basic mapping, often requires offset calibration
-                // For now, simpler approach: add gyro deltas if available, or set rotation absolute?
-                // Absolute is better for "looking around"
-
-                // Using DeviceOrientationControls logic is complex to implement from scratch.
-                // Let's add simple tilt offset to existing look
-                // Or better: Let user look around with touch, gyro adds subtle movement?
-                // Requested: "Control rotation via gyroscope"
-
-                // Standard easy implementation:
-                const alpha = deviceOrientation.alpha; // Z 0-360
-                const beta = deviceOrientation.beta;   // X -180-180
-                const gamma = deviceOrientation.gamma; // Y -90-90
-
-                // We will just offset the camera slightly based on beta/gamma relative to initial
-                // Or actually control it.
-                // Correct way: use a library helper like DeviceOrientationControls (not imported).
-                // We'll map Gamma (left/right tilt) to Rotation Y (Turn)
-                // And Beta (front/back tilt) to Rotation X (Look Up/Down)
-
-                // Sensitivity
-                camera.rotation.y -= gamma * 0.02;
-                camera.rotation.x -= beta * 0.02;
-            }
-
-            // Aplikuj ruch
-            if (direction.lengthSq() > 0) {
-                direction.normalize().multiplyScalar(playerParams.speed);
-                camera.position.add(direction);
-            }
-
-            // --- KOLIZJE (Prosta fizyka) ---
-            // 1. Stała wysokość
-            camera.position.y = playerParams.height;
-
-            // 2. Ograniczenie ścian (Room bounds - padding)
-            const halfW = 20 - 0.5;
-            const halfD = 20 - 0.5;
-
-            camera.position.x = Math.max(-halfW, Math.min(halfW, camera.position.x));
-            camera.position.z = Math.max(-halfD, Math.min(halfD, camera.position.z));
-
-            renderer.render(scene, camera);
+            controls.update();
+            composer.render();
         }
         animate();
 
-        // === RESIZE ===
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
-
     </script>
 </body>
 

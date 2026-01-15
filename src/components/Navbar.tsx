@@ -35,7 +35,7 @@ export const Navbar = () => {
                 <div className="hidden md:flex gap-8 text-sm font-medium text-white/70 items-center">
                     <a href="/presentation.html" target="_blank" className="hover:text-white transition-colors">Technologia</a>
                     <button onClick={handleMapClick} className={`hover:text-white transition-colors ${currentView === 'MAP' ? 'text-white' : ''}`}>Mapa 3D</button>
-                    <a href="/contact" className="hover:text-white transition-colors">Kontakt</a>
+                    <a href="/dev/v5" className="hover:text-white transition-colors">Kontakt</a>
 
                     {/* Desktop Dev Panel Dropdown - tylko w trybie DEV */}
                     {DEV_MODE && (
@@ -86,7 +86,7 @@ export const Navbar = () => {
                     >
                         Mapa 3D
                     </button>
-                    <a href="/contact" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">Kontakt</a>
+                    <a href="/dev/v5" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">Kontakt</a>
 
                     {/* Mobile Dev Panel - tylko w trybie DEV */}
                     {DEV_MODE && (

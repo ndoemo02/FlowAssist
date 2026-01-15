@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowAssist V5 - DEBUG</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #300;
+        }
+    </style>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+
+<body>
+    <div style="position:fixed; top:10px; left:10px; color:white; background:rgba(0,0,0,0.8); padding:10px;">
+        DEBUG MODE<br>
+        1. Jeśli widzisz CZERWONE tło = Brak Sfery / Błąd<br>
+        2. Jeśli widzisz Panoramę = Działa (poprawić animację)<br>
+        3. Sprawdź F12 -> Console
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x550000); // Ciemna czerwień
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 0.1);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.rotateSpeed = -0.5;
+
+        // --- SFERA ---
+        const geometry = new THREE.SphereGeometry(500, 60, 40);
+        const textureLoader = new THREE.TextureLoader();
+
+        console.log("Ładowanie: /images/office_pano.webp");
+        textureLoader.load(
+            '/images/office_pano.webp',
+            (texture) => {
+                console.log("SUKCES: Tekstura załadowana");
+                texture.colorSpace = THREE.SRGBColorSpace;
+
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    side: THREE.BackSide,
+                    opacity: 1.0,  // PEŁNA WIDOCZNOŚĆ
+                    transparent: false
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                scene.add(sphere);
+            },
+            (xhr) => console.log((xhr.loaded / xhr.total * 100) + '% loaded'),
+            (err) => {
+                console.error("BŁĄD:", err);
+                alert("Nie udało się załadować obrazka. Sprawdź konsolę.");
+            }
+        );
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
