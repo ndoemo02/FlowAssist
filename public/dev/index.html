@@ -521,20 +521,25 @@
         // Automatyczna korekta proporcji po załadowaniu wideo
         video.addEventListener('loadedmetadata', () => {
             const aspect = video.videoWidth / video.videoHeight;
-            const height = 1.75; // Stała wysokość (dopasowana do ekranu/postaci)
+            const height = 1.75; // Stała wysokość
             const width = height * aspect;
 
             videoMesh.geometry.dispose();
             videoMesh.geometry = new THREE.PlaneGeometry(width, height);
 
-            // Korekta pozycji X w zależności od szerokości, żeby nie zachodziło na drzewo
-            // Drzewo jest na X=0, szerokość 4.8 (krawędź -2.4).
-            // Chcemy margines np. 0.5.
-            // videoMesh.position.x = -2.4 - 0.5 - (width / 2);
-            // Ale trzymam -4.5 jak wcześniej, chyba że będzie za daleko/blisko.
-            // Przy -4.5 jest bezpiecznie.
-            console.log(`Video loaded. Aspect: ${aspect}, Size: ${width}x${height}`);
+            // PRZYBLIŻENIE MAKSYMALNE DO EKRANU
+            // Krawędź ekranu (drzewa) jest na X = -2.4
+            // Chcemy, by prawa krawędź wideo dotykała lewej krawędzi ekranu (z minimalnym odstępem)
+            // X wideo = Krawędź (-2.4) - Połowa szerokości wideo (width/2) - Margines (0.05)
+
+            videoMesh.position.x = -2.4 - (width / 2) - 0.05;
+
+            console.log(`Video updated. Pos X: ${videoMesh.position.x}, Size: ${width}x${height}`);
         });
+
+        // Fix transparency artifacts
+        videoMesh.renderOrder = 999;
+        videoMat.depthWrite = false; // Ważne dla przezroczystości (jeśli wideo ma kanał alfa lub jest na tle)
 
         window.addEventListener('click', () => {
             if (video.paused) video.play();
