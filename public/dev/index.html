@@ -387,48 +387,7 @@
 
         // Tło (Niebo) usunięte (Void Stage)
 
-        // === AWATAR PARALLAX (Clean Transparency) ===
-        const avatarTexture = textureLoader.load('/assets/textures/amber_new.png');
-        avatarTexture.colorSpace = THREE.SRGBColorSpace;
-        avatarTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-        // Zmniejszamy wysokość o 5% zgodnie z życzeniem (jeśli było takie, tu standard 1.7m)
-        const avatarHeight = 1.7;
-        // Obliczymy szerokość dynamicznie po załadowaniu, startujemy z 1.0
-
-        const avatarGeo = new THREE.PlaneGeometry(1, 1);
-        const avatarMat = new THREE.MeshBasicMaterial({
-            map: avatarTexture,
-            transparent: true,
-            opacity: 0, // Startujemy od 0
-            side: THREE.DoubleSide,
-            depthWrite: false // Ważne dla czystej transparencji na tle
-        });
-
-        const avatar = new THREE.Mesh(avatarGeo, avatarMat);
-        avatar.position.set(0, 0.4 + avatarHeight / 2, -1.0);
-
-        // Grupa dla efektu paralaksy (pozwala na precyzyjne obracanie)
-        const avatarGroup = new THREE.Group();
-        avatarGroup.add(avatar);
-        scene.add(avatarGroup);
-
-        // Dopasowanie proporcji po załadowaniu
-        function updateAvatarAspect() {
-            const image = avatarTexture.image;
-            if (image && image.width && image.height) {
-                const aspect = image.width / image.height;
-                const width = avatarHeight * aspect;
-                avatar.geometry.dispose();
-                avatar.geometry = new THREE.PlaneGeometry(width, avatarHeight);
-                console.log("Avatar aspect updated:", aspect, width);
-            }
-        }
-
-        avatarTexture.onload = updateAvatarAspect;
-
-        // Check if already loaded (cached)
-        if (avatarTexture.image) updateAvatarAspect();
 
         const mouse = new THREE.Vector2();
         window.addEventListener('mousemove', (e) => {
@@ -447,14 +406,11 @@
                 if (particleSystem) {
                     particleSystem.material.uniforms.uGlobalAlpha.value = 1.0;
                 }
-                avatarMat.opacity = 0;
             }
         };
         gui.add(animControl, 'restart').name('▶ Restart Animacji');
 
-        const avatarFolder = gui.addFolder('Ustawienia Awatara');
-        // Opcjonalnie: można dodać kontrolę skali lub jasności, na razie puste lub usunięte
-        // avatarFolder.add(avatarMat, 'opacity', 0, 1).name('Przezroczystość (Debug)');
+
 
         visibilityFolder.add({ logoOpacity: 100 }, 'logoOpacity', 0, 100, 1).name('Logo (Drzewo) %').onChange((value) => {
             screenFrontMat.opacity = value / 100;
@@ -531,24 +487,39 @@
                     targetAlpha,
                     0.05
                 );
-
-                // --- LOGIKA AWATARA ---
-                // Jeśli napis zniknął (targetAlpha == 0 i alpha jest bliska 0) LUB minął czas
-                // Przyjmijmy prostą logikę czasową: FadeOutStart + 1.0s
-
-                if (time > textParams.fadeOutStart + 1.0) {
-                    // Pojawianie się awatara
-                    avatarMat.opacity = THREE.MathUtils.lerp(avatarMat.opacity, 1.0, 0.05);
-                } else {
-                    // Ukrywanie awatara
-                    avatarMat.opacity = THREE.MathUtils.lerp(avatarMat.opacity, 0.0, 0.1);
-                }
-            }
+            } // Zamknięcie if (particleSystem)
 
             controls.update();
             composer.render();
         }
         animate();
+
+        // 7. WIDEO PROMOCYJNE (Po lewej od logo)
+        const video = document.createElement('video');
+        video.src = '/assets/video/FlowAssist Promo.mp4';
+        video.loop = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
+        video.play();
+
+        const videoTexture = new THREE.VideoTexture(video);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+        const videoGeo = new THREE.PlaneGeometry(3.2, 1.8); // 16:9
+        const videoMat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
+        const videoMesh = new THREE.Mesh(videoGeo, videoMat);
+
+        // Pozycja: po lewej stronie ekranu (x = -4.5), na tej samej wysokości co środek drzewa
+        videoMesh.position.set(-4.5, 1.75, -2.5);
+        videoMesh.rotation.y = Math.PI * 0.1; // Lekki obrót w stronę kamery
+        scene.add(videoMesh);
+
+        window.addEventListener('click', () => {
+            if (video.paused) video.play();
+        });
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -557,6 +528,7 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
+    <video id="promoVideo" style="display:none;"></video>
 </body>
 
 </html>
