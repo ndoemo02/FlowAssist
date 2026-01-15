@@ -508,14 +508,33 @@
         videoTexture.magFilter = THREE.LinearFilter;
         videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-        const videoGeo = new THREE.PlaneGeometry(3.2, 1.8); // 16:9
-        const videoMat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide });
+        // Startowa geometria (zostanie zaktualizowana)
+        const videoGeo = new THREE.PlaneGeometry(1, 1);
+        const videoMat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide, transparent: true });
         const videoMesh = new THREE.Mesh(videoGeo, videoMat);
 
-        // Pozycja: po lewej stronie ekranu (x = -4.5), na tej samej wysokości co środek drzewa
+        // Pozycja początkowa
         videoMesh.position.set(-4.5, 1.75, -2.5);
-        videoMesh.rotation.y = Math.PI * 0.1; // Lekki obrót w stronę kamery
+        videoMesh.rotation.y = Math.PI * 0.1;
         scene.add(videoMesh);
+
+        // Automatyczna korekta proporcji po załadowaniu wideo
+        video.addEventListener('loadedmetadata', () => {
+            const aspect = video.videoWidth / video.videoHeight;
+            const height = 1.75; // Stała wysokość (dopasowana do ekranu/postaci)
+            const width = height * aspect;
+
+            videoMesh.geometry.dispose();
+            videoMesh.geometry = new THREE.PlaneGeometry(width, height);
+
+            // Korekta pozycji X w zależności od szerokości, żeby nie zachodziło na drzewo
+            // Drzewo jest na X=0, szerokość 4.8 (krawędź -2.4).
+            // Chcemy margines np. 0.5.
+            // videoMesh.position.x = -2.4 - 0.5 - (width / 2);
+            // Ale trzymam -4.5 jak wcześniej, chyba że będzie za daleko/blisko.
+            // Przy -4.5 jest bezpiecznie.
+            console.log(`Video loaded. Aspect: ${aspect}, Size: ${width}x${height}`);
+        });
 
         window.addEventListener('click', () => {
             if (video.paused) video.play();
