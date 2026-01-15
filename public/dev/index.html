@@ -539,10 +539,34 @@
 
         // Fix transparency artifacts
         videoMesh.renderOrder = 999;
-        videoMat.depthWrite = false; // Ważne dla przezroczystości (jeśli wideo ma kanał alfa lub jest na tle)
+        videoMat.depthWrite = false;
 
-        window.addEventListener('click', () => {
+        // === PRZYCISK DŹWIĘKU ===
+        const soundBtn = document.createElement('button');
+        soundBtn.textContent = '🔊 Włącz dźwięk';
+        soundBtn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 30px;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s;
+        `;
+        soundBtn.onmouseover = () => soundBtn.style.background = 'rgba(50,50,50,0.9)';
+        soundBtn.onmouseout = () => soundBtn.style.background = 'rgba(0,0,0,0.8)';
+        document.body.appendChild(soundBtn);
+
+        soundBtn.addEventListener('click', () => {
+            video.muted = false;
+            video.volume = 0.7;
             if (video.paused) video.play();
+            soundBtn.remove();
         });
 
         window.addEventListener('resize', () => {
