@@ -72,14 +72,12 @@ function CameraTracker({ setCamPos }: { setCamPos: (pos: { x: number, y: number,
 
 // --- KOMPONENTY SCENY ---
 
-function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.Box3) => void }) {
+// --- TYPY ---
+type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
+
+function StudioModel({ config, onCamSetup }: { config: any; onCamSetup: (data: CamSetupData) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
     const videoTex = useVideoTexture('/assets/video/drzewo_video.mp4');
-
-    useEffect(() => {
-        const box = new THREE.Box3().setFromObject(scene);
-        onBounds(box);
-    }, [scene, config.rotY, config.scale, onBounds]);
 
     useEffect(() => {
         scene.traverse((child) => {
@@ -90,17 +88,14 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
                 const name = child.name.toLowerCase();
 
                 if (config.hideShell) {
-                    // 1. ZACZNIJ OD PUSTKI (Ukryj wszystko)
                     child.visible = false;
-
-                    // Oblicz rozmiar i POZYCJĘ
                     const tempBox = new THREE.Box3().setFromObject(child);
                     const size = tempBox.getSize(new THREE.Vector3());
                     const center = tempBox.getCenter(new THREE.Vector3());
                     const distFromCenter = center.distanceTo(new THREE.Vector3(0, 0, 0));
                     const maxDim = Math.max(size.x, size.y, size.z);
 
-                    // 2. PRIORYTET: EKRAN GŁÓWNY + RAMKA (Immunitet absolutny)
+                    // 2. PRIORYTET: EKRAN GŁÓWNY + RAMKA
                     const isScreenName = name.includes('object003_photostudio_1003') || name.includes('rectangle002') ||
                         name.includes('screen') || name.includes('monitor') || name.includes('tv') ||
                         name.includes('rectangle003');
@@ -108,7 +103,7 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
                     if (isScreenName) {
                         child.visible = true;
 
-                        // Aplikuj video do WSZYSTKIEGO co jest ekranem (bo nazwy są mylące)
+                        // Aplikuj video do WSZYSTKIEGO co jest ekranem
                         const mesh = child as THREE.Mesh;
                         mesh.material = new THREE.MeshBasicMaterial({
                             map: videoTex,
@@ -116,27 +111,41 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
                         });
                         videoTex.flipY = true;
 
-                        return; // Ekran jest święty, kończymy.
+                        // KAMERA LOGIC: Użyj localToWorld żeby znaleźć idealną pozycję
+                        // 'Object003' to zazwyczaj właściwa matryca w tym modelu
+                        if (name.includes('object003')) {
+                            // Upewnij się że macierze są świeże
+                            child.updateWorldMatrix(true, false);
+
+                            // 1. Gdzie patrzeć? (Środek ekranu w świecie)
+                            const target = new THREE.Vector3();
+                            child.getWorldPosition(target);
+
+                            // 2. Gdzie stać? (W lokalnym Z- ekranu, bo Z+ był tyłem)
+                            const camPos = new THREE.Vector3(0, 0.0, -3.5);
+                            child.localToWorld(camPos); // Konwersja lokalnej kropki na świat
+
+                            onCamSetup({ position: camPos, target: target });
+                        }
+
+                        return;
                     }
 
                     // 3. PRIORYTET: PODŁOGA (CAŁA = CZARNE LUSTRO)
                     if (name.includes('floor') || name.includes('ground') || name.includes('plane') || name.includes('circle')) {
                         if (distFromCenter < 100.0) {
                             child.visible = true;
-
-                            // NADPISANIE MATERIAŁU: COSMIC DARK GLASS (BEZWYJĄTKOWO)
                             (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({
-                                color: '#050505',  // Głęboka czerń
-                                roughness: 0.05,   // Bardzo gładkie (lustro)
-                                metalness: 0.8,    // Metaliczny polysk
+                                color: '#050505',
+                                roughness: 0.05,
+                                metalness: 0.8,
                                 envMapIntensity: 1.0
                             });
-
                             return;
                         }
                     }
 
-                    // 4. CZARNA LISTA (Veto absolutne dla reszty)
+                    // 4. CZARNA LISTA
                     const isBanned = name.includes('box') || name.includes('wall') || name.includes('plant') ||
                         name.includes('leaf') || name.includes('rock') || name.includes('stone') || name.includes('temp') || name.includes('1002') ||
                         name.includes('decoration') || name.includes('ivy') || name.includes('vine') || name.includes('grass') ||
@@ -144,25 +153,21 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
 
                     if (isBanned) return;
 
-                    // 4. FILTR POZYCYJNY (Dla śmieci dalekich)
+                    // 4. FILTR POZYCYJNY
                     if (distFromCenter > 10.0) return;
 
-                    // 5. OBSŁUGA SPRZĘTU (Kamery) - STREFA BEZPIECZEŃSTWA (SAFE ZONE)
+                    // 5. OBSŁUGA SPRZĘTU
                     const isInsideSafeZone = Math.abs(center.x) < 2.5 && (center.y > -0.5 && center.y < 2.5) && Math.abs(center.z) < 3.0;
 
                     if (isInsideSafeZone && maxDim < 1.2) {
                         if (name.startsWith('cam') || name.startsWith('flap') || name.startsWith('body')) {
-                            // Wyklucz duże 'body'
-                            if (name.startsWith('body') && maxDim > 0.5) {
-                                // hide
-                            } else {
+                            if (name.startsWith('body') && maxDim > 0.5) { } else {
                                 child.visible = true;
                             }
                         }
                     }
 
                 } else {
-                    // Tryb normalny
                     if (name.includes('floor') || name.includes('plane') || name.includes('ground') || name.includes('circle')) {
                         child.visible = false;
                     } else {
@@ -171,7 +176,7 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
                 }
             }
         });
-    }, [scene, config.hideShell]);
+    }, [scene, config.hideShell, onCamSetup, videoTex]);
 
     return (
         <group>
@@ -329,20 +334,16 @@ function LightingReveal() {
     );
 }
 
-function CameraSetup({ bounds, controlsRef }: { bounds: THREE.Box3 | null; controlsRef: MutableRefObject<OrbitControlsImpl | null> }) {
+function CameraSetup({ setupData, controlsRef }: { setupData: CamSetupData | null; controlsRef: MutableRefObject<OrbitControlsImpl | null> }) {
     const { camera } = useThree();
     const [initialized, setInitialized] = useState(false);
 
     useEffect(() => {
-        if (!bounds || !controlsRef.current || initialized) return;
+        if (!setupData || !controlsRef.current || initialized) return;
 
-        const center = bounds.getCenter(new THREE.Vector3());
-        // Ustaw target na środek modelu
-        controlsRef.current.target.copy(center);
-
-        // Ustaw kamerę relatywnie do środka (na wprost, blisko)
-        // Zakładamy, że ekran jest frontem do Z
-        camera.position.copy(center).add(new THREE.Vector3(0, 0, 2.5)); // Z=2.5 powinno być bezpieczne i bliskie
+        // Ustaw kamerę i cel
+        camera.position.copy(setupData.position);
+        controlsRef.current.target.copy(setupData.target);
 
         camera.near = 0.01;
         camera.far = 250;
@@ -354,7 +355,7 @@ function CameraSetup({ bounds, controlsRef }: { bounds: THREE.Box3 | null; contr
         controlsRef.current.update();
         setInitialized(true);
 
-    }, [camera, bounds, controlsRef, initialized]);
+    }, [camera, setupData, controlsRef, initialized]);
 
     return null;
 }
@@ -367,18 +368,12 @@ export default function V5Page() {
     });
 
     const [camPos, setCamPos] = useState({ x: 0, y: 0, z: 0 });
-    const [modelBounds, setModelBounds] = useState<THREE.Box3 | null>(null);
+    const [camSetup, setCamSetup] = useState<CamSetupData | null>(null);
     const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
-    const handleBounds = useCallback((box: THREE.Box3) => {
-        setModelBounds(box);
+    const handleCamSetup = useCallback((data: CamSetupData) => {
+        setCamSetup(prev => (!prev ? data : prev));
     }, []);
-
-    const controlsTarget = useMemo<[number, number, number]>(() => {
-        if (!modelBounds) return [0, 0.5, 0];
-        const center = modelBounds.getCenter(new THREE.Vector3());
-        return [center.x, center.y, center.z];
-    }, [modelBounds]);
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -393,21 +388,20 @@ export default function V5Page() {
     return (
         <div className="w-full h-screen bg-black relative overflow-hidden">
             <DevPanelOverlay config={config} setConfig={setConfig} camPos={camPos} />
-            <Canvas shadows camera={{ position: [0, 0.5, 1.0], fov: 70, near: 0.01, far: 250 }}>
+            <Canvas shadows camera={{ position: [0, 0.5, 5.0], fov: 60 }}>
                 <color attach="background" args={['#050208']} />
-                <StarField count={8000} />
+                <StarField count={12000} />
                 <CosmicSnow count={300} />
                 <NebulaGlow />
                 <LightingReveal />
                 <Suspense fallback={<Html><div className="text-white opacity-20 text-xs tracking-widest">LOADING...</div></Html>}>
-                    <StudioModel config={config} onBounds={handleBounds} />
+                    <StudioModel config={config} onCamSetup={handleCamSetup} />
                     <Environment preset="night" blur={0.8} background={false} />
                 </Suspense>
                 <CameraTracker setCamPos={setCamPos} />
-                <CameraSetup bounds={modelBounds} controlsRef={controlsRef} />
+                <CameraSetup setupData={camSetup} controlsRef={controlsRef} />
                 <OrbitControls
                     ref={controlsRef}
-                    target={controlsTarget}
                     enablePan={true}
                     panSpeed={1.0}
                     enableDamping
