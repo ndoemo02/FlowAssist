@@ -49,6 +49,18 @@ function DevPanelOverlay({ config, setConfig, camPos }: { config: any, setConfig
                         onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className="w-full accent-green-500" />
                 </div>
 
+                {/* NOWE SUWAKI DO KALIBRACJI KAMERY */}
+                <div className="border-t border-green-800 pt-2 mt-2">
+                    <label className="flex justify-between text-[10px] text-yellow-300"><span>Shift Left (X)</span> <span>{config.camOffsetLeft?.toFixed(1) ?? 0}</span></label>
+                    <input type="range" min="-20" max="20" step="0.5" value={config.camOffsetLeft ?? 0}
+                        onChange={(e) => handleChange('camOffsetLeft', parseFloat(e.target.value))} className="w-full accent-yellow-500" />
+                </div>
+                <div>
+                    <label className="flex justify-between text-[10px] text-yellow-300"><span>Distance (Z)</span> <span>{config.camOffsetDist?.toFixed(1) ?? 3.5}</span></label>
+                    <input type="range" min="1" max="20" step="0.5" value={config.camOffsetDist ?? 3.5}
+                        onChange={(e) => handleChange('camOffsetDist', parseFloat(e.target.value))} className="w-full accent-yellow-500" />
+                </div>
+
                 <div className="pt-2">
                     <label className="flex items-center space-x-2 cursor-pointer">
                         <input type="checkbox" checked={config.hideShell}
@@ -117,13 +129,34 @@ function StudioModel({ config, onCamSetup }: { config: any; onCamSetup: (data: C
                             // Upewnij się że macierze są świeże
                             child.updateWorldMatrix(true, false);
 
-                            // 1. Gdzie patrzeć? (Środek ekranu w świecie)
+                            // 1. Gdzie patrzeć? (GEOMETRYCZNY ŚRODEK EKRANU)
+                            const bbox = new THREE.Box3().setFromObject(child);
                             const target = new THREE.Vector3();
-                            child.getWorldPosition(target);
+                            bbox.getCenter(target);
 
-                            // 2. Gdzie stać? (W lokalnym Z- ekranu, bo Z+ był tyłem)
-                            const camPos = new THREE.Vector3(0, 0.0, -3.5);
-                            child.localToWorld(camPos); // Konwersja lokalnej kropki na świat
+                            // Sprawdźmy wektor "do przodu" (oś Z obiektu)
+                            const dir = new THREE.Vector3();
+                            child.getWorldDirection(dir);
+
+                            // Parametry z configu
+                            const dist = config.camOffsetDist ?? 3.5;
+                            const shiftLeft = config.camOffsetLeft ?? 0;
+
+                            // Pozycja bazowa (dist)
+                            const camPos = target.clone().add(dir.clone().multiplyScalar(dist));
+
+                            // Przesunięcie w lewo (Panowanie całego ujęcia: Kamery i Celu)
+                            const up = new THREE.Vector3(0, 1, 0);
+                            const right = new THREE.Vector3().crossVectors(up, dir).normalize();
+
+                            const shiftVec = right.clone().multiplyScalar(-shiftLeft);
+                            camPos.add(shiftVec);
+                            target.add(shiftVec); // Przesuwamy też punkt patrzenia!
+
+                            // Wyślij dane do kamery
+                            console.log("Cam Config:", { dist, shiftLeft });
+                            console.log("Cam Pos (Final):", camPos);
+                            console.log("Target (Final):", target);
 
                             onCamSetup({ position: camPos, target: target });
                         }
@@ -176,7 +209,7 @@ function StudioModel({ config, onCamSetup }: { config: any; onCamSetup: (data: C
                 }
             }
         });
-    }, [scene, config.hideShell, onCamSetup, videoTex]);
+    }, [scene, config.hideShell, onCamSetup, videoTex, config.camOffsetDist, config.camOffsetLeft]);
 
     return (
         <group>
@@ -364,7 +397,9 @@ export default function V5Page() {
     const [config, setConfig] = useState({
         rotY: DEFAULT_ROT_Y,
         hideShell: HIDE_SHELL_DEFAULT,
-        scale: MODEL_SCALE
+        scale: MODEL_SCALE,
+        camOffsetLeft: 3.5,      // Korekta w LEWO (wcześniej -8.5 wyrzuciło w prawo)
+        camOffsetDist: 3.0       // Zbliżenie
     });
 
     const [camPos, setCamPos] = useState({ x: 0, y: 0, z: 0 });
