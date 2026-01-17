@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, useGLTF, Environment, OrbitControls } from '@react-three/drei';
+import { Html, useGLTF, Environment, OrbitControls, useVideoTexture } from '@react-three/drei';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
@@ -74,48 +74,7 @@ function CameraTracker({ setCamPos }: { setCamPos: (pos: { x: number, y: number,
 
 function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.Box3) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
-
-    // AUDYT ROOM - wypisz wszystkie meshe i ich wymiary
-    useEffect(() => {
-        console.log('=== 🎬 AUDYT V5 STUDIO ROOM ===');
-        const meshes: { name: string; width: number; height: number; depth: number; pos: string }[] = [];
-
-        scene.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-                const mesh = child as THREE.Mesh;
-                const box = new THREE.Box3().setFromObject(mesh);
-                const size = box.getSize(new THREE.Vector3());
-
-                meshes.push({
-                    name: mesh.name,
-                    width: parseFloat(size.x.toFixed(3)),
-                    height: parseFloat(size.y.toFixed(3)),
-                    depth: parseFloat(size.z.toFixed(3)),
-                    pos: `(${mesh.position.x.toFixed(2)}, ${mesh.position.y.toFixed(2)}, ${mesh.position.z.toFixed(2)})`
-                });
-            }
-        });
-
-        // Sortuj po nazwie
-        meshes.sort((a, b) => a.name.localeCompare(b.name));
-
-        // Wyświetl jako tabelę
-        console.table(meshes);
-
-        // Podświetl ekrany
-        const screens = meshes.filter(m =>
-            m.name.toLowerCase().includes('screen') ||
-            m.name.toLowerCase().includes('monitor') ||
-            m.name.toLowerCase().includes('display') ||
-            m.name.toLowerCase().includes('tv')
-        );
-        if (screens.length > 0) {
-            console.log('=== 📺 ZNALEZIONE EKRANY ===');
-            console.table(screens);
-        }
-
-        console.log('=== KONIEC AUDYTU ===');
-    }, [scene]);
+    const videoTex = useVideoTexture('/assets/video/drzewo video.mp4');
 
     useEffect(() => {
         const box = new THREE.Box3().setFromObject(scene);
@@ -130,19 +89,85 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
 
                 const name = child.name.toLowerCase();
 
-                if (name.includes('floor') || name.includes('plane') || name.includes('ground')) {
-                    child.visible = false;
-                }
-
                 if (config.hideShell) {
-                    if (name.includes('photostudio') || name.includes('temp') || name.includes('box')) {
-                        child.visible = false;
+                    // 1. ZACZNIJ OD PUSTKI (Ukryj wszystko)
+                    child.visible = false;
+
+                    // Oblicz rozmiar i POZYCJĘ
+                    const tempBox = new THREE.Box3().setFromObject(child);
+                    const size = tempBox.getSize(new THREE.Vector3());
+                    const center = tempBox.getCenter(new THREE.Vector3());
+                    const distFromCenter = center.distanceTo(new THREE.Vector3(0, 0, 0));
+                    const maxDim = Math.max(size.x, size.y, size.z);
+
+                    // 2. PRIORYTET: EKRAN GŁÓWNY + RAMKA (Immunitet absolutny)
+                    const isScreenName = name.includes('object003_photostudio_1003') || name.includes('rectangle002') ||
+                        name.includes('screen') || name.includes('monitor') || name.includes('tv') ||
+                        name.includes('rectangle003');
+
+                    if (isScreenName) {
+                        child.visible = true;
+
+                        // Aplikuj video do WSZYSTKIEGO co jest ekranem (bo nazwy są mylące)
+                        const mesh = child as THREE.Mesh;
+                        mesh.material = new THREE.MeshBasicMaterial({
+                            map: videoTex,
+                            toneMapped: false
+                        });
+                        videoTex.flipY = true;
+
+                        return; // Ekran jest święty, kończymy.
                     }
-                    if (name.startsWith('object') && !name.includes('cam')) {
-                        child.visible = false;
+
+                    // 3. PRIORYTET: PODŁOGA (CAŁA = CZARNE LUSTRO)
+                    if (name.includes('floor') || name.includes('ground') || name.includes('plane') || name.includes('circle')) {
+                        if (distFromCenter < 100.0) {
+                            child.visible = true;
+
+                            // NADPISANIE MATERIAŁU: COSMIC DARK GLASS (BEZWYJĄTKOWO)
+                            (child as THREE.Mesh).material = new THREE.MeshStandardMaterial({
+                                color: '#050505',  // Głęboka czerń
+                                roughness: 0.05,   // Bardzo gładkie (lustro)
+                                metalness: 0.8,    // Metaliczny polysk
+                                envMapIntensity: 1.0
+                            });
+
+                            return;
+                        }
                     }
+
+                    // 4. CZARNA LISTA (Veto absolutne dla reszty)
+                    const isBanned = name.includes('box') || name.includes('wall') || name.includes('plant') ||
+                        name.includes('leaf') || name.includes('rock') || name.includes('stone') || name.includes('temp') || name.includes('1002') ||
+                        name.includes('decoration') || name.includes('ivy') || name.includes('vine') || name.includes('grass') ||
+                        name.includes('bush') || name.includes('flower') || name.includes('geo') || name.includes('shape');
+
+                    if (isBanned) return;
+
+                    // 4. FILTR POZYCYJNY (Dla śmieci dalekich)
+                    if (distFromCenter > 10.0) return;
+
+                    // 5. OBSŁUGA SPRZĘTU (Kamery) - STREFA BEZPIECZEŃSTWA (SAFE ZONE)
+                    const isInsideSafeZone = Math.abs(center.x) < 2.5 && (center.y > -0.5 && center.y < 2.5) && Math.abs(center.z) < 3.0;
+
+                    if (isInsideSafeZone && maxDim < 1.2) {
+                        if (name.startsWith('cam') || name.startsWith('flap') || name.startsWith('body')) {
+                            // Wyklucz duże 'body'
+                            if (name.startsWith('body') && maxDim > 0.5) {
+                                // hide
+                            } else {
+                                child.visible = true;
+                            }
+                        }
+                    }
+
                 } else {
-                    if (!name.includes('floor')) child.visible = true;
+                    // Tryb normalny
+                    if (name.includes('floor') || name.includes('plane') || name.includes('ground') || name.includes('circle')) {
+                        child.visible = false;
+                    } else {
+                        child.visible = true;
+                    }
                 }
             }
         });
@@ -152,27 +177,24 @@ function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.
         <group>
             <primitive
                 object={scene}
-                position={[0, 0.15, 0]}
+                position={[0, 0, 0]}
                 rotation={[0, config.rotY, 0]}
                 scale={[config.scale, config.scale, config.scale]}
             />
-            {/* Podłoga usunięta dla Galaxy Theme */}
         </group>
     );
 }
 
 // === GALAXY THEME: STAR FIELD ===
-function StarField({ count = 3000 }) {
+function StarField({ count = 12000 }) {
     const points = useRef<THREE.Points>(null);
 
     const positions = useMemo(() => {
         const pos = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-            // Rozłóż gwiazdy w sferze
-            const radius = 50 + Math.random() * 100;
+            const radius = 30 + Math.random() * 80; // Szerszy rozrzut
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
-
             pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
             pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
             pos[i * 3 + 2] = radius * Math.cos(phi);
@@ -180,18 +202,9 @@ function StarField({ count = 3000 }) {
         return pos;
     }, [count]);
 
-    const sizes = useMemo(() => {
-        const s = new Float32Array(count);
-        for (let i = 0; i < count; i++) {
-            s[i] = Math.random() * 2 + 0.5;
-        }
-        return s;
-    }, [count]);
-
     useFrame((state) => {
         if (points.current) {
-            points.current.rotation.y = state.clock.getElapsedTime() * 0.01;
-            points.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.005) * 0.1;
+            points.current.rotation.y = state.clock.getElapsedTime() * 0.02; // Szybszy obrót dla dynamiki
         }
     });
 
@@ -199,40 +212,77 @@ function StarField({ count = 3000 }) {
         <points ref={points}>
             <bufferGeometry>
                 <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
-                <bufferAttribute attach="attributes-size" array={sizes} count={count} itemSize={1} />
             </bufferGeometry>
             <pointsMaterial
-                size={0.5}
+                size={0.03}          // Drobne pixele
                 color="#ffffff"
                 transparent
-                opacity={0.8}
-                sizeAttenuation
+                opacity={0.9}        // Wyraźne kropki
+                sizeAttenuation={true}
                 blending={THREE.AdditiveBlending}
+                depthWrite={false}   // Nie zasłaniają się nawzajem (lepszy glow)
             />
         </points>
     );
 }
 
-// === GALAXY THEME: NEBULA GLOW ===
-function NebulaGlow() {
-    const mesh = useRef<THREE.Mesh>(null);
+// --- GALAXY THEME: COSMIC SNOW ---
+function CosmicSnow({ count = 400 }) {
+    const mesh = useRef<THREE.Group>(null);
+    const particles = useMemo(() => {
+        const temp = [];
+        for (let i = 0; i < count; i++) {
+            const t = Math.random() * 100;
+            const factor = 20 + Math.random() * 100;
+            const speed = 0.01 + Math.random() / 200;
+            const xFactor = -15 + Math.random() * 30;
+            const yFactor = -5 + Math.random() * 15;
+            const zFactor = -20 + Math.random() * 40;
+            temp.push({ t, factor, speed, xFactor, yFactor, zFactor, mx: 0, my: 0 });
+        }
+        return temp;
+    }, [count]);
 
     useFrame((state) => {
-        if (mesh.current) {
-            mesh.current.rotation.z = state.clock.getElapsedTime() * 0.02;
-        }
+        if (!mesh.current) return;
+        particles.forEach((particle, i) => {
+            let { t, factor, speed, xFactor, yFactor, zFactor } = particle;
+            t = particle.t += speed / 2;
+            const a = Math.cos(t) + Math.sin(t * 1) / 10;
+            const b = Math.sin(t) + Math.cos(t * 2) / 10;
+            const s = Math.cos(t);
+
+            const child = mesh.current!.children[i] as THREE.Mesh;
+            child.position.set(
+                a + xFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
+                b + yFactor + Math.sin((t / 10) * factor) + (Math.cos(t * 2) * factor) / 10,
+                b + zFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 3) * factor) / 10
+            );
+            child.scale.set(s * 0.5, s * 0.5, s * 0.5);
+        });
     });
 
     return (
-        <mesh ref={mesh} position={[0, 0, -80]} scale={[100, 100, 1]}>
-            <planeGeometry />
-            <meshBasicMaterial
-                color="#1a0a2e"
-                transparent
-                opacity={0.6}
-            />
-        </mesh>
+        <group ref={mesh}>
+            {particles.map((_, i) => (
+                <mesh key={i}>
+                    <sphereGeometry args={[0.04, 6, 6]} />
+                    <meshStandardMaterial
+                        color="#8b5cf6"
+                        emissive="#8b5cf6"
+                        emissiveIntensity={4}
+                        transparent
+                        opacity={0.4}
+                    />
+                </mesh>
+            ))}
+        </group>
     );
+}
+
+// === GALAXY THEME: NEBULA GLOW (DISABLED) ===
+function NebulaGlow() {
+    return null;
 }
 
 function LightingReveal() {
@@ -252,8 +302,6 @@ function LightingReveal() {
     return (
         <>
             <ambientLight ref={ambientRef} intensity={0} color="#1a0a2e" />
-
-            {/* Main spotlight - purple tint */}
             <spotLight
                 ref={spotRef}
                 position={[0, 10, -5]}
@@ -263,8 +311,6 @@ function LightingReveal() {
                 color="#8b5cf6"
                 castShadow
             />
-
-            {/* Rim light - cosmic blue */}
             <spotLight
                 ref={floorSpotRef}
                 position={[0, 15, 0]}
@@ -276,8 +322,6 @@ function LightingReveal() {
                 distance={40}
                 decay={1.5}
             />
-
-            {/* Accent lights - galaxy colors */}
             <pointLight position={[5, 3, 2]} intensity={2.0} color="#ec4899" distance={15} />
             <pointLight position={[-5, 3, 2]} intensity={2.0} color="#8b5cf6" distance={15} />
             <pointLight position={[0, 5, -5]} intensity={1.5} color="#06b6d4" distance={20} />
@@ -285,58 +329,28 @@ function LightingReveal() {
     );
 }
 
-function IntroText() {
-    const [visible, setVisible] = useState(true);
-    useEffect(() => { setTimeout(() => setVisible(false), 2500); }, []);
-
-    return (
-        <Html fullscreen style={{ pointerEvents: 'none' }}>
-            <main className={`flex flex-col items-center justify-center w-full h-full bg-black transition-opacity duration-[2000ms] ease-out ${visible ? 'opacity-100' : 'opacity-0'}`}>
-                <div className="text-center z-10">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1.5, delay: 0.5 }}
-                        className="text-4xl md:text-6xl font-light text-white tracking-[0.2em] mb-4 uppercase"
-                    >
-                        Stabilizacja
-                    </motion.h1>
-                </div>
-            </main>
-        </Html>
-    );
-}
-
 function CameraSetup({ bounds, controlsRef }: { bounds: THREE.Box3 | null; controlsRef: MutableRefObject<OrbitControlsImpl | null> }) {
     const { camera } = useThree();
 
-    const center = useMemo(() => (bounds ? bounds.getCenter(new THREE.Vector3()) : null), [bounds]);
-    const offset = useMemo(() => {
-        if (!bounds) return null;
-        const size = bounds.getSize(new THREE.Vector3());
-        return new THREE.Vector3(0, size.y * 0.1, size.z * 0.2);
-    }, [bounds]);
-
     useEffect(() => {
-        if (!center || !offset) return;
-        const nextPosition = center.clone().add(offset);
-        camera.position.copy(nextPosition);
+        // Sztywne ustawienie kamery "Złoty Kadr" - ZBLIŻENIE
+        camera.position.set(0, 1.1, 3.5); // Dużo bliżej (było 12.0)
         camera.near = 0.01;
         camera.far = 250;
+
         if (camera instanceof THREE.PerspectiveCamera) {
-            camera.fov = 70;
+            camera.fov = 60; // Węższy kąt dla lepszego kinowego looku
         }
         camera.updateProjectionMatrix();
+
         if (controlsRef.current) {
-            controlsRef.current.target.copy(center);
+            controlsRef.current.target.set(0, 1.0, 0); // Patrz na środek ekranu (mniej więcej)
             controlsRef.current.update();
         }
-    }, [camera, center, offset, controlsRef]);
+    }, [camera, controlsRef]); // Wykonaj raz (lub gdy zmieni się ref)
 
     return null;
 }
-
-// --- GŁÓWNY WIDOK ---
 
 export default function V5Page() {
     const [config, setConfig] = useState({
@@ -371,32 +385,19 @@ export default function V5Page() {
 
     return (
         <div className="w-full h-screen bg-black relative overflow-hidden">
-
-            {/* PANEL POZA CANVAS - NIE UCIEKA */}
             <DevPanelOverlay config={config} setConfig={setConfig} camPos={camPos} />
-
-            {/* 
-         Kamera startuje tuż przed ekranem.
-         Target ustawiony na (0, 0.5, 0) - orbita wokół centrum modelu.
-      */}
             <Canvas shadows camera={{ position: [0, 0.5, 1.0], fov: 70, near: 0.01, far: 250 }}>
-                {/* Galaxy Theme Background */}
                 <color attach="background" args={['#050208']} />
-
-                {/* Stars */}
-                <StarField count={5000} />
+                <StarField count={8000} />
+                <CosmicSnow count={300} />
                 <NebulaGlow />
-
                 <LightingReveal />
-
                 <Suspense fallback={<Html><div className="text-white opacity-20 text-xs tracking-widest">LOADING...</div></Html>}>
                     <StudioModel config={config} onBounds={handleBounds} />
-                    <Environment preset="night" blur={0.6} background={false} />
+                    <Environment preset="night" blur={0.8} background={false} />
                 </Suspense>
-
                 <CameraTracker setCamPos={setCamPos} />
                 <CameraSetup bounds={modelBounds} controlsRef={controlsRef} />
-
                 <OrbitControls
                     ref={controlsRef}
                     target={controlsTarget}
