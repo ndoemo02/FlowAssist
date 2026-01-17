@@ -74,7 +74,7 @@ function CameraTracker({ setCamPos }: { setCamPos: (pos: { x: number, y: number,
 
 function StudioModel({ config, onBounds }: { config: any; onBounds: (box: THREE.Box3) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
-    const videoTex = useVideoTexture('/assets/video/drzewo video.mp4');
+    const videoTex = useVideoTexture('/assets/video/drzewo_video.mp4');
 
     useEffect(() => {
         const box = new THREE.Box3().setFromObject(scene);
