@@ -331,23 +331,30 @@ function LightingReveal() {
 
 function CameraSetup({ bounds, controlsRef }: { bounds: THREE.Box3 | null; controlsRef: MutableRefObject<OrbitControlsImpl | null> }) {
     const { camera } = useThree();
+    const [initialized, setInitialized] = useState(false);
 
     useEffect(() => {
-        // Sztywne ustawienie kamery "Złoty Kadr" - ZBLIŻENIE
-        camera.position.set(0, 1.1, 3.5); // Dużo bliżej (było 12.0)
+        if (!bounds || !controlsRef.current || initialized) return;
+
+        const center = bounds.getCenter(new THREE.Vector3());
+        // Ustaw target na środek modelu
+        controlsRef.current.target.copy(center);
+
+        // Ustaw kamerę relatywnie do środka (na wprost, blisko)
+        // Zakładamy, że ekran jest frontem do Z
+        camera.position.copy(center).add(new THREE.Vector3(0, 0, 2.5)); // Z=2.5 powinno być bezpieczne i bliskie
+
         camera.near = 0.01;
         camera.far = 250;
-
         if (camera instanceof THREE.PerspectiveCamera) {
-            camera.fov = 60; // Węższy kąt dla lepszego kinowego looku
+            camera.fov = 60;
         }
         camera.updateProjectionMatrix();
 
-        if (controlsRef.current) {
-            controlsRef.current.target.set(0, 1.0, 0); // Patrz na środek ekranu (mniej więcej)
-            controlsRef.current.update();
-        }
-    }, [camera, controlsRef]); // Wykonaj raz (lub gdy zmieni się ref)
+        controlsRef.current.update();
+        setInitialized(true);
+
+    }, [camera, bounds, controlsRef, initialized]);
 
     return null;
 }
