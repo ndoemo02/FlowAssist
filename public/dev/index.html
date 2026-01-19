@@ -532,41 +532,52 @@ Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)
         gui.add(animControl, 'restart').name('▶ Restart Animacji');
 
         // === KINEMATIC CAMERA MOVE (CRANE TILT-DOWN) ===
+        // === KINEMATIC CAMERA MOVE (CRANE TILT-DOWN) ===
         function triggerCraneSequence() {
             // Czekamy aż napis się uformuje (ok 2.5s)
 
-            // Punkt docelowy kamery (Nalot)
-            // Zmiana: "Eye level" z drzewem. Mniej "z góry", bardziej na wprost.
-            // Screen center Y = 3.6. Camera Y ~ 3.8 (lekko nad środkiem).
-            // Zwiększamy dystans (Z), aby zmieścić cały pionowy ekran (6.4m).
+            // Punkt docelowy kamery (Nalot) - Ustawione na sztywno wg życzenia użytkownika
             const targetCamPos = isMobile
-                ? { x: 0, y: 3.8, z: 11.5 } // Mobile: Daleko, na wprost środka ekranu
-                : { x: 0, y: 3.6, z: 9.0 }; // Desktop: Wyważony kadr
+                ? { x: 0.00, y: 6.54, z: 3.58 } // Mobile: FINAL SETTINGS
+                : { x: 0, y: 3.6, z: 9.0 };     // Desktop: Bez zmian (lub dopasuj jeśli trzeba)
 
             // Punkt skupienia (LookAt)
-            // Celujemy w dolną część pnia/korzenie (Y ~ 2.2), to wyśrodkuje kompozycję
-            // (Drzewo góra + Napis dół).
-            const targetFocus = { x: 0, y: 2.2, z: -1.0 };
+            const targetFocus = isMobile
+                ? { x: -0.03, y: 3.45, z: -0.69 } // Mobile: FINAL SETTINGS
+                : { x: 0, y: 2.2, z: -1.0 };      // Desktop
 
             const delay = 3.0; // Start po uformowaniu napisu
 
             const tl = gsap.timeline({ delay: delay });
 
-            // 1. Ruch Kamery (Position)
+            // 1. INTENSYWNY BLASK (SHINE) PODCZAS LOTU
+            // Zwiększamy alphaBoost i shine w trakcie lotu, potem wracamy do normy
+            if (particleSystem) {
+                // Skok jasności na start lotu
+                tl.to(particleSystem.material.uniforms.uGlobalAlpha, {
+                    value: 2.0, // Prześwietlenie (oślepiające)
+                    duration: 1.0,
+                    ease: "power2.in"
+                }, "start");
+
+                // Powrót do normalności po wylądowaniu
+                tl.to(particleSystem.material.uniforms.uGlobalAlpha, {
+                    value: isMobile ? 0.8 : 1.0, // Powrót do standardowej czytelności
+                    duration: 2.0,
+                    ease: "power2.out"
+                }, "end-=1.0"); // Zaczyna wracać chwilę przed końcem lotu
+            }
+
+            // 2. Ruch Kamery (Position)
             tl.to(camera.position, {
                 x: targetCamPos.x,
                 y: targetCamPos.y,
                 z: targetCamPos.z,
                 duration: 5.0,
-                ease: "power3.out", // Cubic/Quartic feel
-                onUpdate: () => {
-                    // Opcjonalnie: dynamiczna korekta lookAt w trakcie lotu,
-                    // ale lepiej animować orbitControls.target
-                }
+                ease: "power3.out",
             }, "start");
 
-            // 2. Ruch Celu (LookAt / Rotation)
-            // OrbitControls.target determinuje gdzie patrzy kamera.
+            // 3. Ruch Celu (LookAt / Rotation)
             tl.to(controls.target, {
                 x: targetFocus.x,
                 y: targetFocus.y,
@@ -574,9 +585,11 @@ Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)
                 duration: 5.0,
                 ease: "power3.out",
                 onUpdate: () => {
-                    controls.update(); // Ważne dla synchronizacji światła kamery
+                    controls.update();
                 }
             }, "start");
+
+            tl.addLabel("end");
         }
 
         // Uruchom sekwencję (przeniesione na koniec pliku, aby nie blokować GUI w razie błędu)
