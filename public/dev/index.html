@@ -217,14 +217,14 @@
 
         // Pokój i sufit usunięte (Void Stage)
 
-        // Ekran (Drzewo Video w jakości HD)
-        const screenWidth = 4.8, screenHeight = 2.7, screenDepth = 1.2;
+        // Ekran (Drzewo Video w jakości HD) - PODWYŻSZONY DLA PIONOWEGO WIDEO
+        const screenWidth = 4.8, screenHeight = 6.4, screenDepth = 1.2;
 
         const screenGeo = new THREE.BoxGeometry(screenWidth, screenHeight, screenDepth);
 
         // === WIDEO LOGO (Drzewo) ===
         const logoVideo = document.createElement('video');
-        logoVideo.src = '/assets/video/drzewo video.mp4';
+        logoVideo.src = '/assets/video/drzewo%20video.mp4';
         logoVideo.loop = true;
         logoVideo.muted = true;
         logoVideo.playsInline = true;
@@ -236,6 +236,24 @@
         treeTexture.magFilter = THREE.LinearFilter;
         treeTexture.colorSpace = THREE.SRGBColorSpace;
 
+        // Zapobieganie rozciąganiu na całą szerokość (centrowanie pionowego wideo)
+        logoVideo.addEventListener('loadedmetadata', () => {
+            const videoAspect = logoVideo.videoWidth / logoVideo.videoHeight;
+            const screenAspect = screenWidth / screenHeight;
+
+            if (videoAspect < screenAspect) {
+                // Wideo jest bardziej pionowe niż ekran - dodajemy "pasy" po bokach
+                const repeatX = screenAspect / videoAspect;
+                treeTexture.repeat.set(repeatX, 1);
+                treeTexture.offset.set((1 - repeatX) / 2, 0);
+            } else {
+                // Wideo jest szersze - dodajemy pasy góra/dół (choć tu celujemy w pionowe)
+                const repeatY = videoAspect / screenAspect;
+                treeTexture.repeat.set(1, repeatY);
+                treeTexture.offset.set(0, (1 - repeatY) / 2);
+            }
+        });
+
         // BasicMaterial zapewnia brak cieniowania (samoświecenie) = realna jakość grafiki
         const panelMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const screenFrontMat = new THREE.MeshBasicMaterial({
@@ -246,11 +264,12 @@
 
         const screenMaterials = [panelMat, panelMat, panelMat, panelMat, screenFrontMat, panelMat];
         const screen = new THREE.Mesh(screenGeo, screenMaterials);
-        screen.position.set(0, 1.75, -2.5 - screenDepth / 2);
+        // Pozycja Y zaktualizowana: 0.4 (podest) + 3.2 (połowa wysokości) = 3.6
+        screen.position.set(0, 3.6, -2.5 - screenDepth / 2);
         scene.add(screen);
 
-        const bounceLight = new THREE.RectAreaLight(0x2fc7ff, 4.38, screenWidth, screenHeight);
-        bounceLight.position.set(0, 1.75, -2.4); // Zaktualizowana pozycja światła
+        const bounceLight = new THREE.RectAreaLight(0x2fc7ff, 6.0, screenWidth, screenHeight);
+        bounceLight.position.set(0, 3.6, -2.4);
         bounceLight.lookAt(0, 1.0, 2.0);
         bounceLight.rotation.y = Math.PI;
         scene.add(bounceLight);
