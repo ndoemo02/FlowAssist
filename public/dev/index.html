@@ -99,7 +99,7 @@
         }
     </style>
     <script type="importmap">
-        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/" } }
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/", "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js" } }
     </script>
 </head>
 
@@ -124,6 +124,7 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import gsap from 'gsap';
 
         // 1. Inicjalizacja GUI
         const gui = new GUI({ title: 'Panel Deweloperski' });
@@ -441,6 +442,54 @@
             }
         };
         gui.add(animControl, 'restart').name('▶ Restart Animacji');
+
+        // === KINEMATIC CAMERA MOVE (CRANE TILT-DOWN) ===
+        function triggerCraneSequence() {
+            // Czekamy aż napis się uformuje (ok 2.5s)
+
+            // Punkt docelowy kamery (Nalot)
+            // Musimy byc wyzej (Y) i blizej (Z)
+            const targetCamPos = isMobile
+                ? { x: 0, y: 5.5, z: 4.5 }  // Mobile: Wyżej, ostrzejszy kąt
+                : { x: 0, y: 4.8, z: 3.2 }; // Desktop: Nalot kinowy
+
+            // Punkt skupienia (LookAt) - Srodek napisu / góra modelu
+            // Napis jest na Y ~ 0.45. Chcemy patrzeć prosto na niego lub lekko nad.
+            const targetFocus = { x: 0, y: 0.5, z: 0 };
+
+            const delay = 3.0; // Start po uformowaniu napisu
+
+            const tl = gsap.timeline({ delay: delay });
+
+            // 1. Ruch Kamery (Position)
+            tl.to(camera.position, {
+                x: targetCamPos.x,
+                y: targetCamPos.y,
+                z: targetCamPos.z,
+                duration: 5.0,
+                ease: "power3.out", // Cubic/Quartic feel
+                onUpdate: () => {
+                    // Opcjonalnie: dynamiczna korekta lookAt w trakcie lotu,
+                    // ale lepiej animować orbitControls.target
+                }
+            }, "start");
+
+            // 2. Ruch Celu (LookAt / Rotation)
+            // OrbitControls.target determinuje gdzie patrzy kamera.
+            tl.to(controls.target, {
+                x: targetFocus.x,
+                y: targetFocus.y,
+                z: targetFocus.z,
+                duration: 5.0,
+                ease: "power3.out",
+                onUpdate: () => {
+                    controls.update(); // Ważne dla synchronizacji światła kamery
+                }
+            }, "start");
+        }
+
+        // Uruchom sekwencję (razem z startem strony)
+        triggerCraneSequence();
 
 
 
