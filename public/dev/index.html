@@ -98,16 +98,21 @@
 
             /* Ukrywamy panel deweloperski na mobile, bo zasłania widok */
             /* Ukrywamy panel deweloperski na mobile DOMYŚLNIE, ale pozwalamy go włączyć */
-            .lil-gui {
+            #gui-container {
                 display: none;
                 /* Będzie sterowane przez JS */
-                position: fixed !important;
-                top: 0 !important;
-                right: 0 !important;
-                z-index: 3000 !important;
-                max-width: 80% !important;
-                max-height: 90vh !important;
-                overflow-y: auto !important;
+                position: fixed;
+                top: 0;
+                right: 0;
+                z-index: 3000;
+            }
+
+            /* Wymuszamy, żeby dzieci gui-container (czyli lil-gui) były widoczne */
+            #gui-container .lil-gui {
+                max-height: 90vh;
+                overflow-y: auto;
+                /* Override default lil-gui fixed positioning if needed, though container handles it */
+                position: static !important;
             }
 
             #debug-toggle {
@@ -130,6 +135,7 @@
         }
     </style>
     <div id="debug-toggle">⚙️</div>
+    <div id="gui-container"></div>
     <script type="importmap">
         { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/", "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js" } }
     </script>
@@ -159,7 +165,9 @@
         import gsap from 'gsap';
 
         // 1. Inicjalizacja GUI
-        const gui = new GUI({ title: 'Panel Deweloperski' });
+        // 1. Inicjalizacja GUI w kontenerze
+        const guiContainer = document.getElementById('gui-container');
+        const gui = new GUI({ title: 'Panel Deweloperski', container: guiContainer, width: 300 });
 
         // Debug Toggle Logic
         const debugToggle = document.getElementById('debug-toggle');
@@ -167,12 +175,18 @@
 
         if (window.innerWidth < 768) {
             debugToggle.style.display = 'flex';
-            gui.domElement.style.display = 'none'; // Start hidden on mobile
+            guiContainer.style.display = 'none'; // Ensure hidden on mobile start
+        } else {
+            // Desktop: ensure visible
+            guiContainer.style.display = 'block';
+            guiContainer.style.position = 'absolute';
+            guiContainer.style.top = '0';
+            guiContainer.style.right = '0';
         }
 
         debugToggle.addEventListener('click', () => {
             isDebugVisible = !isDebugVisible;
-            gui.domElement.style.display = isDebugVisible ? 'block' : 'none';
+            guiContainer.style.display = isDebugVisible ? 'block' : 'none';
         });
 
         // === PRIORITY DEBUG BUTTONS (Added first to ensure visibility) ===
