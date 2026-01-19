@@ -217,11 +217,23 @@
 
         // Pokój i sufit usunięte (Void Stage)
 
-        // Ekran (Drzewo w jakości HD)
+        // Ekran (Drzewo Video w jakości HD)
         const screenWidth = 4.8, screenHeight = 2.7, screenDepth = 1.2;
 
         const screenGeo = new THREE.BoxGeometry(screenWidth, screenHeight, screenDepth);
-        const treeTexture = textureLoader.load('/assets/textures/FREEFLOW_LOGO.png');
+
+        // === WIDEO LOGO (Drzewo) ===
+        const logoVideo = document.createElement('video');
+        logoVideo.src = '/assets/video/drzewo video.mp4';
+        logoVideo.loop = true;
+        logoVideo.muted = true;
+        logoVideo.playsInline = true;
+        logoVideo.crossOrigin = 'anonymous';
+        logoVideo.play();
+
+        const treeTexture = new THREE.VideoTexture(logoVideo);
+        treeTexture.minFilter = THREE.LinearFilter;
+        treeTexture.magFilter = THREE.LinearFilter;
         treeTexture.colorSpace = THREE.SRGBColorSpace;
 
         // BasicMaterial zapewnia brak cieniowania (samoświecenie) = realna jakość grafiki

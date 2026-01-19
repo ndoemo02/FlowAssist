@@ -14,11 +14,13 @@ interface ShowcaseStore {
     units: UnitData[];
     selectedUnitId: string | null;
     logs: string[];
+    addressMapping: Record<string, any>;
 
     // Actions
     selectUnit: (id: string | null) => void;
     moveUnit: (id: string, targetPosition: [number, number, number]) => void;
     addLog: (message: string) => void;
+    setAddressMapping: (mapping: Record<string, any>) => void;
 }
 
 // Początkowe pozycje jednostek (nad Lwowem)
@@ -33,6 +35,7 @@ export const useShowcaseStore = create<ShowcaseStore>((set) => ({
     units: INITIAL_UNITS,
     selectedUnitId: null,
     logs: ['System aktywny', 'Mapa załadowana'],
+    addressMapping: {},
 
     selectUnit: (id) => set({ selectedUnitId: id }),
 
@@ -48,4 +51,6 @@ export const useShowcaseStore = create<ShowcaseStore>((set) => ({
     addLog: (message) => set((state) => ({
         logs: [...state.logs.slice(-4), message]
     })),
+
+    setAddressMapping: (mapping) => set({ addressMapping: mapping }),
 }));

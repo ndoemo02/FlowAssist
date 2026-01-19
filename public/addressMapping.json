@@ -1,0 +1,30 @@
+{
+  "Biznesowa B-Centrum": {
+    "lat": 50.2661,
+    "lon": 19.0251,
+    "height": 400,
+    "zone": "Strefa Biznesowa",
+    "description": "Centrum Operacyjne - Spodek / MCK"
+  },
+  "Logistyczna L-Silesia": {
+    "lat": 50.2705,
+    "lon": 19.0045,
+    "height": 350,
+    "zone": "Strefa Logistyczna",
+    "description": "Węzeł Logistyczny - Rejon Silesia City Center"
+  },
+  "Mieszkalna M-Gwiazdy": {
+    "lat": 50.2605,
+    "lon": 19.0372,
+    "height": 450,
+    "zone": "Strefa Mieszkalna",
+    "description": "Sektor Mieszkalny - Osiedle Gwiazdy"
+  },
+  "Rekreacyjna R-Kultura": {
+    "lat": 50.2629,
+    "lon": 19.0275,
+    "height": 300,
+    "zone": "Strefa Rekreacyjna",
+    "description": "Strefa Kultury / NOSPR"
+  }
+}

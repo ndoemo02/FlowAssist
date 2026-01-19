@@ -35,6 +35,7 @@ export const Navbar = () => {
                 <div className="hidden md:flex gap-8 text-sm font-medium text-white/70 items-center">
                     <a href="/presentation.html" target="_blank" className="hover:text-white transition-colors">Technologia</a>
                     <button onClick={handleMapClick} className={`hover:text-white transition-colors ${currentView === 'MAP' ? 'text-white' : ''}`}>Mapa 3D</button>
+                    <a href="https://flow-assist.vercel.app/dev/v3/index.html" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-emerald-400">🌍 Cesium Maps</a>
                     <a href="/dev/v5" className="hover:text-white transition-colors">Kontakt</a>
 
                     {/* Desktop Dev Panel Dropdown - tylko w trybie DEV */}
@@ -86,6 +87,15 @@ export const Navbar = () => {
                     >
                         Mapa 3D
                     </button>
+                    <a
+                        href="https://flow-assist.vercel.app/dev/v3/index.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsOpen(false)}
+                        className="hover:text-white transition-colors text-emerald-400"
+                    >
+                        🌍 Cesium Maps
+                    </a>
                     <a href="/dev/v5" onClick={() => setIsOpen(false)} className="hover:text-white transition-colors">Kontakt</a>
 
                     {/* Mobile Dev Panel - tylko w trybie DEV */}

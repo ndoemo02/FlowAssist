@@ -101,6 +101,39 @@ export default function CommandConsole() {
         if (!cmdInput.trim()) return;
 
         const cmd = cmdInput.toLowerCase();
+        addLog(`> ${cmdInput}`);
+
+        // --- OBSŁUGA NAWIGACJI CESIUM (Smart City) ---
+        if (typeof window !== 'undefined' && (window as any).flyToAddress) {
+            const flyTo = (window as any).flyToAddress;
+
+            if (cmd.includes('spodek') || cmd.includes('centrum') || cmd.includes('biznes')) {
+                sfx.success();
+                flyTo('Biznesowa B-Centrum');
+                addLog('Rozkaz: Nawigacja do Centrum Biznesowego');
+                return;
+            }
+            if (cmd.includes('silesia') || cmd.includes('logistyka') || cmd.includes('logistyczna')) {
+                sfx.success();
+                flyTo('Logistyczna L-Silesia');
+                addLog('Rozkaz: Nawigacja do Strefy Logistycznej');
+                return;
+            }
+            if (cmd.includes('gwiazdy') || cmd.includes('mieszkania') || cmd.includes('osiedle')) {
+                sfx.success();
+                flyTo('Mieszkalna M-Gwiazdy');
+                addLog('Rozkaz: Nawigacja do Strefy Mieszkalnej');
+                return;
+            }
+            if (cmd.includes('nospr') || cmd.includes('kultura') || cmd.includes('rekreacja')) {
+                sfx.success();
+                flyTo('Rekreacyjna R-Kultura');
+                addLog('Rozkaz: Nawigacja do Strefy Kultury');
+                return;
+            }
+        }
+
+        // --- OBSŁUGA JEDNOSTEK (Stary system) ---
         let targetUnitId = null;
         let targetLocation: [number, number, number] | null = null;
         let locationName = '';
@@ -118,8 +151,6 @@ export default function CommandConsole() {
             }
         }
 
-        addLog(`> ${cmdInput}`);
-
         if (targetUnitId && targetLocation) {
             sfx.success(); // SFX: Rozkaz przyjęty
             moveUnit(targetUnitId, targetLocation);
@@ -127,8 +158,13 @@ export default function CommandConsole() {
             addLog(`Rozkaz: [${targetUnitId.toUpperCase()}] -> [${locationName.toUpperCase()}]`);
         } else if (!targetUnitId && !targetLocation) {
             sfx.error();
-            addLog('Nie zrozumiano. Użyj: "Alfa do Centrum"');
+            addLog('Nie zrozumiano. Użyj: "Pokaż Spodek" lub "Alfa do Centrum"');
         } else if (!targetUnitId) {
+            // Jeśli nie podano jednostki, ale podano lokalizację typu "Centrum" - traktujemy to jako nawigację kamery (fallback)
+            if (locationName === 'centrum' && (window as any).flyToAddress) {
+                (window as any).flyToAddress('Biznesowa B-Centrum');
+                return;
+            }
             sfx.error();
             addLog('Błąd: Która jednostka? (Alfa, Bravo...)');
         } else if (!targetLocation) {

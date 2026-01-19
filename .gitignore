@@ -4,6 +4,10 @@ node_modules
 .env.local
 dist
 build
+freeflow.json
+.env.local
 .DS_Store
 *.log
 build_log*.txt
+freeflow.json
+.env.local

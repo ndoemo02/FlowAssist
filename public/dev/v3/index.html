@@ -3,241 +3,217 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>FlowAssist - Google 3D Tiles Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FlowAssist - Digital Twin (CesiumJS)</title>
+
+    <!-- Styl Cesium (Lokalny asset z public/cesium) -->
+    <link href="/cesium/Widgets/widgets.css" rel="stylesheet">
+
     <style>
-        body {
+        body,
+        html {
+            width: 100%;
+            height: 100%;
             margin: 0;
+            padding: 0;
             overflow: hidden;
             background-color: #000;
             font-family: 'Inter', sans-serif;
         }
 
-        #info {
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-overlay {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
             color: white;
             background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p {
+            margin: 0 0 15px 0;
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
             padding: 10px;
-            border-radius: 8px;
-            pointer-events: none;
-            z-index: 100;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            text-align: left;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-size: 13px;
         }
 
-        #credits {
+        .btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+        }
+
+        #loading {
             position: absolute;
-            bottom: 10px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 100;
-        }
-
-        #credits img {
-            height: 24px;
-        }
-
-        .lil-gui {
-            z-index: 1000 !important;
+            transform: translate(-50%, -50%);
+            color: #00ffff;
+            font-family: monospace;
+            font-size: 24px;
+            z-index: 90;
+            pointer-events: none;
+            text-shadow: 0 0 10px #00ffff;
         }
     </style>
-    <!-- Import map dla Three.js i 3D Tiles Renderer -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "3d-tiles-renderer": "https://unpkg.com/3d-tiles-renderer@0.3.36/src/index.js"
-            }
-        }
-    </script>
+
+    <!-- Skrypt Cesium (Lokalny asset) -->
+    <script src="/cesium/Cesium.js"></script>
 </head>
 
 <body>
-    <div id="info">
-        <h2>FlowAssist Real Estate Mode</h2>
-        <p>Lokalizacja: Warszawa (Live Data)</p>
+
+    <div id="loading">INITIALIZING DIGITAL TWIN...</div>
+
+    <div id="ui-overlay">
+        <h1>Metropolia V3</h1>
+        <p>Prezentacja Katowic w technologii CesiumJS + Google Photorealistic 3D Tiles.</p>
+
+        <button class="btn" onclick="flyTo('Spodek')">📍 Spodek / MCK</button>
+        <button class="btn" onclick="flyTo('Silesia')">🏗️ Silesia City Center</button>
+        <button class="btn" onclick="flyTo('Gwiazdy')">🏢 Osiedle Gwiazdy</button>
+        <button class="btn" onclick="flyTo('NOSPR')">🎵 Strefa Kultury / NOSPR</button>
     </div>
 
-    <!-- Wymagane przez Google Attribution -->
-    <div id="credits">
-        <img src="https://assets.stickpng.com/images/580b57fcd9996e24bc43c51f.png" alt="Google">
-        <span style="color:white; font-size: 12px; text-shadow: 0 0 4px black;">Google 3D Tiles</span>
-    </div>
+    <div id="cesiumContainer"></div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-        import { GoogleTilesRenderer } from '3d-tiles-renderer';
+    <script>
+        // Konfiguracja globalna dla Cesium
+        window.CESIUM_BASE_URL = '/cesium';
 
-        const API_KEY = 'AIzaSyBu9Xn3jjFGHveHz7xmav-8R_7W4oby7a0';
+        // Token dostępu
+        const ION_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIwNjBhYjA0Ni03MjAzLTQyZmYtODRlNy04NmEzNWYzMWY1NDAiLCJpZCI6Mzc4OTMyLCJpYXQiOjE3Njg0NjY4NzZ9.2SOHQ4b9RBBlP_Gt4DNAD7PFOp9PD2TW2ahFcvAxnSQ';
+        Cesium.Ion.defaultAccessToken = ION_TOKEN;
 
-        // Setup sceny
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000510); // Ciemny granat zamiast czerni (dla kontrastu)
-        // Mgła
-        scene.fog = new THREE.FogExp2(0x000510, 0.0015);
+        // Inicjalizacja Viewera
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            // terrainProvider: Cesium.createWorldTerrain(), // Deprecated in new Cesium versions
+            animation: false,
+            timeline: false,
+            baseLayerPicker: false,
+            homeButton: false,
+            geocoder: false,
+            selectionIndicator: false,
+            infoBox: false,
+            navigationHelpButton: false,
+            sceneModePicker: false,
+            creditContainer: document.createElement("div") // Ukrycie stopki
+        });
 
-        // --- OBIEKT REFERENCYJNY (TEST) ---
-        // Czerwona Kapsuła - jeśli ją widzisz, znaczy że Three.js działa poprawnie
-        const debugGeo = new THREE.CapsuleGeometry(10, 30, 4, 8);
-        const debugMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
-        const debugMesh = new THREE.Mesh(debugGeo, debugMat);
-        debugMesh.position.set(0, 0, 0); // Centrum świata
-        scene.add(debugMesh);
+        // Włączenie głębi terenu
+        viewer.scene.globe.depthTestAgainstTerrain = true;
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 4000);
-        // Pozycja początkowa (nad Warszawą, ale to tylko lokalne koordynaty Three.js)
-        camera.position.set(0, 400, 600);
+        // Ładowanie Google Photorealistic 3D Tiles
+        async function loadGoogleTiles() {
+            try {
+                const tileset = await Cesium.createGooglePhotorealistic3DTileset();
+                viewer.scene.primitives.add(tileset);
+                console.log('✅ Google 3D Tiles załadowane.');
+                document.getElementById('loading').style.display = 'none';
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true }); // LogDepthBuffer ważny dla dużej skali
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        document.body.appendChild(renderer.domElement);
+                // Start w Katowicach
+                viewer.camera.setView({
+                    destination: Cesium.Cartesian3.fromDegrees(19.025, 50.266, 1500),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(0),
+                        pitch: Cesium.Math.toRadians(-45),
+                        roll: 0.0
+                    }
+                });
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.minDistance = 50;
-        controls.maxDistance = 1500;
-        controls.maxPolarAngle = Math.PI / 2 - 0.1; // Nie pozwalamy wejść pod ziemię
-
-        // --- GOOGLE 3D TILES SETUP ---
-        const tilesRenderer = new GoogleTilesRenderer(API_KEY);
-        scene.add(tilesRenderer.group);
-
-        // --- DIAGNOSTYKA BŁĘDÓW ---
-        const originalFetch = window.fetch;
-        window.fetch = async (...args) => {
-            const response = await originalFetch(...args);
-            if (!response.ok && args[0] && typeof args[0] === 'string' && args[0].includes('googleapis.com')) {
-                const msg = `API Error: ${response.status} ${response.statusText}`;
-                console.error(msg);
-                const info = document.getElementById('info');
-                if (info && !info.innerHTML.includes(msg)) {
-                    info.innerHTML += `<br><br><strong style="color:#ff4444;">⚠️ ${msg}</strong><br><small>Włącz "Map Tiles API" w Google Cloud Console.</small>`;
-                }
+            } catch (error) {
+                console.error('❌ Błąd ładowania 3D Tiles:', error);
+                document.getElementById('loading').innerHTML = 'BŁĄD ŁADOWANIA MAPY';
+                document.getElementById('loading').style.color = 'red';
             }
-            return response;
-        };
+        }
 
-        // Funkcja do ustawiania kamery na konkretną lat/lon
-        // Warszawa: 52.2319581, 21.0067249 (Pałac Kultury)
-        tilesRenderer.setLatLonToYUp(52.2319581, 21.0067249);
+        loadGoogleTiles();
 
-        // Optymalizacja ładowania
-        tilesRenderer.errorTarget = 12; // Mniejsza wartość = lepsza jakość, ale wolniej (domyślnie 6)
-        tilesRenderer.loadSiblings = false;
+        // Funkcja lotu
+        window.flyTo = function (target) {
+            let lat, lon, height = 500;
 
-        // --- ŚWIATŁO ---
-        // Google Tiles są "unlit" (mają wypalone światło), ale możemy dodać atmosferę
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(100, 200, 50);
-        scene.add(dirLight);
+            if (typeof target === 'object') {
+                lat = target.lat;
+                lon = target.lon;
+                height = target.height || 500;
+            } else {
+                // Fallback dla stringów (lokalny debug)
+                if (target === 'Spodek') { lat = 50.2661; lon = 19.0251; height = 400; }
+                if (target === 'Silesia') { lat = 50.2705; lon = 19.0045; height = 350; }
+                if (target === 'Gwiazdy') { lat = 50.2605; lon = 19.0372; height = 450; }
+                if (target === 'NOSPR') { lat = 50.2629; lon = 19.0275; height = 300; }
+            }
 
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambLight);
+            if (!lat || !lon) {
+                console.warn('Nieznany cel lub brak współrzędnych:', target);
+                return;
+            }
 
-        // --- POST-PROCESSING (PREMIUM LOOK) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.6; // Bloom tylko na jasnych elementach (okna, niebo)
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
+            console.log(`🚁 FlyTo: ${lat}, ${lon}, ${height}`);
 
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // --- HOLOGRAMY (FlowAssist) ---
-        // Dodamy Twój napis FlowAssist unoszący się nad miastem
-        function initHoloText() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048; canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgba(0,0,0,0)'; // przezroczyste tło
-            ctx.fillRect(0, 0, canvas.width, canvas.height); // czyszczenie
-
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 300px sans-serif';
-            ctx.fillText("FlowAssist", 1024, 400);
-            ctx.font = 'bold 150px sans-serif';
-            ctx.fillText("Real Estate AI", 1024, 700);
-
-            const tex = new THREE.CanvasTexture(canvas);
-            const mat = new THREE.SpriteMaterial({
-                map: tex,
-                transparent: true,
-                opacity: 0.9,
-                color: 0x00ffff // Cyjanowy tint
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(lon, lat, height + 600),
+                orientation: {
+                    heading: Cesium.Math.toRadians(0),
+                    pitch: Cesium.Math.toRadians(-45),
+                    roll: 0.0
+                },
+                duration: 3.0,
+                easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT
             });
-            const sprite = new THREE.Sprite(mat);
-            // Wielki napis nad miastem
-            sprite.scale.set(400, 200, 1);
-            sprite.position.set(0, 300, 0); // Nad PKiN
-            scene.add(sprite);
-
-            // Dodatkowe cząsteczki / dron
-            const sphereGeo = new THREE.SphereGeometry(10, 32, 32);
-            const sphereMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
-            const drone = new THREE.Mesh(sphereGeo, sphereMat);
-            drone.position.set(50, 250, 50);
-            scene.add(drone);
-        }
-
-        initHoloText();
-
-        // --- GUI ---
-        const gui = new GUI({ title: 'Ustawienia Demo' });
-        const params = {
-            bloomStrength: 1.2,
-            exposure: 1.2,
-            location: 'Warszawa',
-            reload: () => window.location.reload()
         };
 
-        gui.add(params, 'bloomStrength', 0, 3).onChange(v => bloomPass.strength = v);
-        gui.add(params, 'exposure', 0, 3).onChange(v => renderer.toneMappingExposure = v);
-        gui.add(params, 'location', ['Warszawa', 'Lwów', 'New York']).onChange(val => {
-            // Prosta zmiana lokalizacji (wymaga przeładowania renderera w praktyce, tu uproszczone setLatLon)
-            if (val === 'Warszawa') tilesRenderer.setLatLonToYUp(52.2319581, 21.0067249);
-            if (val === 'Lwów') tilesRenderer.setLatLonToYUp(49.841952, 24.031599); // Rynek
-            if (val === 'New York') tilesRenderer.setLatLonToYUp(40.7484, -73.9857); // Empire State
-            // Reset kamery
-            camera.position.set(0, 400, 600);
-            controls.target.set(0, 0, 0);
+        // --- POST MESSAGE LISTENER (From React App) ---
+        window.addEventListener('message', (event) => {
+            // Zabezpieczenie origin (opcjonalne w dev)
+            // if (event.origin !== "http://localhost:3000") return;
+
+            const { type, payload } = event.data;
+            if (type === 'FLY_TO') {
+                console.log('📬 Message received:', payload);
+                // Assuming flyToAddress is a typo and should be flyTo
+                window.flyTo(payload.target);
+            }
         });
 
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-
-            // Wymagane aktualizowanie tilesów
-            tilesRenderer.update();
-
-            composer.render();
-            // renderer.render(scene, camera); // Używamy composera
-        }
-
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // Expose for debug
+        // Assuming flyToAddress is a typo and should be flyTo
+        window.flyToAddress = window.flyTo;
     </script>
 </body>
 
