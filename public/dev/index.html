@@ -93,11 +93,32 @@
             }
 
             /* Ukrywamy panel deweloperski na mobile, bo zasłania widok */
+            /* Ukrywamy panel deweloperski na mobile DOMYŚLNIE, ale pozwalamy go włączyć */
             .lil-gui {
-                display: none !important;
+                display: none;
+                /* Będzie sterowane przez JS */
+            }
+
+            #debug-toggle {
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                width: 40px;
+                height: 40px;
+                background: rgba(0, 0, 0, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                color: white;
+                font-size: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 2000;
+                cursor: pointer;
             }
         }
     </style>
+    <div id="debug-toggle" style="display:none;">⚙️</div>
     <script type="importmap">
         { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/", "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js" } }
     </script>
@@ -128,6 +149,20 @@
 
         // 1. Inicjalizacja GUI
         const gui = new GUI({ title: 'Panel Deweloperski' });
+
+        // Debug Toggle Logic
+        const debugToggle = document.getElementById('debug-toggle');
+        let isDebugVisible = false;
+
+        if (window.innerWidth < 768) {
+            debugToggle.style.display = 'flex';
+            gui.domElement.style.display = 'none'; // Start hidden on mobile
+        }
+
+        debugToggle.addEventListener('click', () => {
+            isDebugVisible = !isDebugVisible;
+            gui.domElement.style.display = isDebugVisible ? 'block' : 'none';
+        });
 
         // 2. Scena, Kamera, Renderer
         const scene = new THREE.Scene();
@@ -448,14 +483,17 @@
             // Czekamy aż napis się uformuje (ok 2.5s)
 
             // Punkt docelowy kamery (Nalot)
-            // Musimy byc wyzej (Y) i blizej (Z)
+            // Zmiana: "Eye level" z drzewem. Mniej "z góry", bardziej na wprost.
+            // Screen center Y = 3.6. Camera Y ~ 3.8 (lekko nad środkiem).
+            // Zwiększamy dystans (Z), aby zmieścić cały pionowy ekran (6.4m).
             const targetCamPos = isMobile
-                ? { x: 0, y: 5.5, z: 4.5 }  // Mobile: Wyżej, ostrzejszy kąt
-                : { x: 0, y: 4.8, z: 3.2 }; // Desktop: Nalot kinowy
+                ? { x: 0, y: 3.8, z: 11.5 } // Mobile: Daleko, na wprost środka ekranu
+                : { x: 0, y: 3.6, z: 9.0 }; // Desktop: Wyważony kadr
 
-            // Punkt skupienia (LookAt) - Srodek napisu / góra modelu
-            // Napis jest na Y ~ 0.45. Chcemy patrzeć prosto na niego lub lekko nad.
-            const targetFocus = { x: 0, y: 0.5, z: 0 };
+            // Punkt skupienia (LookAt)
+            // Celujemy w dolną część pnia/korzenie (Y ~ 2.2), to wyśrodkuje kompozycję
+            // (Drzewo góra + Napis dół).
+            const targetFocus = { x: 0, y: 2.2, z: -1.0 };
 
             const delay = 3.0; // Start po uformowaniu napisu
 
@@ -488,8 +526,8 @@
             }, "start");
         }
 
-        // Uruchom sekwencję (razem z startem strony)
-        triggerCraneSequence();
+        // Uruchom sekwencję (przeniesione na koniec pliku, aby nie blokować GUI w razie błędu)
+        // triggerCraneSequence();
 
 
 
@@ -525,10 +563,29 @@
         bloomFolder.add(bloomPass, 'strength', 0, 5).name('Intensywność');
         bloomFolder.add(bloomPass, 'radius', 0, 2).name('Promień Rozmycia');
 
-        const camFolder = gui.addFolder('Ustawienia Kamery');
-        camFolder.add(camera.position, 'y', 0.5, 10).name('Wysokość');
-        camFolder.add(camera.position, 'z', 2, 8).name('Oddalenie');
-        camFolder.add(camera.rotation, 'x', -0.5, 0.5).name('Kąt Nachylenia');
+        const camFolder = gui.addFolder('Ustawienia Kamery (DEBUG)');
+
+        const debugParams = {
+            logCoords: () => {
+                const info = `
+Camera POS: x:${camera.position.x.toFixed(2)}, y:${camera.position.y.toFixed(2)}, z:${camera.position.z.toFixed(2)}
+Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)}, z:${controls.target.z.toFixed(2)}
+                `;
+                console.log(info);
+                alert(info); // Łatwiej odczytać na mobile
+            }
+        };
+
+        camFolder.add(camera.position, 'x', -10, 10).name('Cam X').listen();
+        camFolder.add(camera.position, 'y', 0, 20).name('Cam Y').listen();
+        camFolder.add(camera.position, 'z', 0, 25).name('Cam Z').listen();
+
+        camFolder.add(controls.target, 'x', -5, 5).name('LookAt X').listen().onChange(() => controls.update());
+        camFolder.add(controls.target, 'y', -5, 10).name('LookAt Y').listen().onChange(() => controls.update());
+        camFolder.add(controls.target, 'z', -10, 10).name('LookAt Z').listen().onChange(() => controls.update());
+
+        camFolder.add(debugParams, 'logCoords').name('📋 LOG COORDINATES');
+        camFolder.open();
 
         // Pętla animacji
         function animate() {
@@ -649,6 +706,17 @@
             if (video.paused) video.play();
             soundBtn.remove();
         });
+
+        // Uruchomienie sekwencji animacji (bezpiecznie)
+        try {
+            setTimeout(() => {
+                if (typeof triggerCraneSequence === 'function') {
+                    triggerCraneSequence();
+                }
+            }, 100);
+        } catch (e) {
+            console.error("Animation Sequence Error:", e);
+        }
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
