@@ -168,6 +168,11 @@
             gui.domElement.style.display = isDebugVisible ? 'block' : 'none';
         });
 
+        // === PRIORITY DEBUG BUTTONS (Added first to ensure visibility) ===
+        const camFolder = gui.addFolder('Ustawienia Kamery (DEBUG)');
+        // Will populate this folder after camera is created
+
+
         // 2. Scena, Kamera, Renderer
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
@@ -206,6 +211,29 @@
         controls.maxDistance = 8;
         controls.maxPolarAngle = Math.PI * 0.85;
         controls.minPolarAngle = Math.PI * 0.1;
+
+        // === POPULATE CAMERA DEBUG (Now that camera & controls exist) ===
+        const debugParams = {
+            logCoords: () => {
+                const info = `
+Camera POS: x:${camera.position.x.toFixed(2)}, y:${camera.position.y.toFixed(2)}, z:${camera.position.z.toFixed(2)}
+Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)}, z:${controls.target.z.toFixed(2)}
+                `;
+                console.log(info);
+                alert(info);
+            }
+        };
+
+        camFolder.add(camera.position, 'x', -10, 10).name('Cam X').listen();
+        camFolder.add(camera.position, 'y', 0, 20).name('Cam Y').listen();
+        camFolder.add(camera.position, 'z', 0, 25).name('Cam Z').listen();
+
+        camFolder.add(controls.target, 'x', -5, 5).name('LookAt X').listen().onChange(() => controls.update());
+        camFolder.add(controls.target, 'y', -5, 10).name('LookAt Y').listen().onChange(() => controls.update());
+        camFolder.add(controls.target, 'z', -10, 10).name('LookAt Z').listen().onChange(() => controls.update());
+
+        camFolder.add(debugParams, 'logCoords').name('📋 LOG COORDINATES');
+        camFolder.open();
 
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
@@ -567,29 +595,9 @@
         bloomFolder.add(bloomPass, 'strength', 0, 5).name('Intensywność');
         bloomFolder.add(bloomPass, 'radius', 0, 2).name('Promień Rozmycia');
 
-        const camFolder = gui.addFolder('Ustawienia Kamery (DEBUG)');
 
-        const debugParams = {
-            logCoords: () => {
-                const info = `
-Camera POS: x:${camera.position.x.toFixed(2)}, y:${camera.position.y.toFixed(2)}, z:${camera.position.z.toFixed(2)}
-Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)}, z:${controls.target.z.toFixed(2)}
-                `;
-                console.log(info);
-                alert(info); // Łatwiej odczytać na mobile
-            }
-        };
 
-        camFolder.add(camera.position, 'x', -10, 10).name('Cam X').listen();
-        camFolder.add(camera.position, 'y', 0, 20).name('Cam Y').listen();
-        camFolder.add(camera.position, 'z', 0, 25).name('Cam Z').listen();
 
-        camFolder.add(controls.target, 'x', -5, 5).name('LookAt X').listen().onChange(() => controls.update());
-        camFolder.add(controls.target, 'y', -5, 10).name('LookAt Y').listen().onChange(() => controls.update());
-        camFolder.add(controls.target, 'z', -10, 10).name('LookAt Z').listen().onChange(() => controls.update());
-
-        camFolder.add(debugParams, 'logCoords').name('📋 LOG COORDINATES');
-        camFolder.open();
 
         // Pętla animacji
         function animate() {
