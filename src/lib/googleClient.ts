@@ -19,12 +19,12 @@ const auth = new google.auth.GoogleAuth({
 
 export const getSheetsClient = async () => {
     const client = await auth.getClient();
-    return google.sheets({ version: 'v4', auth: client });
+    return google.sheets({ version: 'v4', auth: client as any });
 };
 
 export const getCalendarClient = async () => {
     const client = await auth.getClient();
-    return google.calendar({ version: 'v3', auth: client });
+    return google.calendar({ version: 'v3', auth: client as any });
 };
 
 export const appendToSheet = async (spreadsheetId: string, range: string, values: string[][]) => {
