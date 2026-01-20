@@ -225,7 +225,8 @@ function StudioModel({ config, onCamSetup }: { config: any; onCamSetup: (data: C
 
 // --- SAMPLE MODEL (OBOK EKRANU) ---
 function SampleModel({ config }: { config: any }) {
-    const { scene } = useGLTF('/assets/models/sample_2026-01-19T134909.709.glb');
+    const { scene } = useGLTF('/assets/models/sample_model.glb');
+
 
     useEffect(() => {
         scene.traverse((child) => {
