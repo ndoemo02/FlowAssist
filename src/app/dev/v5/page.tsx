@@ -223,6 +223,29 @@ function StudioModel({ config, onCamSetup }: { config: any; onCamSetup: (data: C
     );
 }
 
+// --- SAMPLE MODEL (OBOK EKRANU) ---
+function SampleModel({ config }: { config: any }) {
+    const { scene } = useGLTF('/assets/models/sample_2026-01-19T134909.709.glb');
+
+    useEffect(() => {
+        scene.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+    }, [scene]);
+
+    return (
+        <primitive
+            object={scene}
+            position={[4, 1.5, -2.5]} // Obok ekranu (po prawej stronie)
+            rotation={[0, -Math.PI / 2, 0]} // Obrócony w stronę kamery
+            scale={[1, 1, 1]} // Dostosuj według potrzeby
+        />
+    );
+}
+
 // === GALAXY THEME: STAR FIELD ===
 function StarField({ count = 12000 }) {
     const points = useRef<THREE.Points>(null);
@@ -431,6 +454,7 @@ export default function V5Page() {
                 <LightingReveal />
                 <Suspense fallback={<Html><div className="text-white opacity-20 text-xs tracking-widest">LOADING...</div></Html>}>
                     <StudioModel config={config} onCamSetup={handleCamSetup} />
+                    <SampleModel config={config} />
                     <Environment preset="night" blur={0.8} background={false} />
                 </Suspense>
                 <CameraTracker setCamPos={setCamPos} />
