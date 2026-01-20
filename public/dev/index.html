@@ -326,20 +326,110 @@ Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)
         treeTexture.colorSpace = THREE.SRGBColorSpace;
 
         // Zapobieganie rozciąganiu na całą szerokość (centrowanie pionowego wideo)
+        // Zapobieganie rozciąganiu na całą szerokość (centrowanie pionowego wideo - tryb COVER)
         logoVideo.addEventListener('loadedmetadata', () => {
             const videoAspect = logoVideo.videoWidth / logoVideo.videoHeight;
             const screenAspect = screenWidth / screenHeight;
 
+            // COVER Logic: Scale until both dimensions cover the screen.
+            // One repeat will be 1, the other < 1 (cropping).
             if (videoAspect < screenAspect) {
-                // Wideo jest bardziej pionowe niż ekran - dodajemy "pasy" po bokach
-                const repeatX = screenAspect / videoAspect;
-                treeTexture.repeat.set(repeatX, 1);
-                treeTexture.offset.set((1 - repeatX) / 2, 0);
+                // Video is narrower than screen (e.g. Portrait on Landscape)
+                // We match Width, crop Height? No.
+                // If video is 0.5, screen is 1.0.
+                // To cover, we must match Width? No, if we match width, height is 2.0 (covers).
+                // So repeat.x = 1.
+                // repeat.y = screenAspect / videoAspect ???
+                // Wait.
+                // If Video 1x2, Screen 1x1. Match Width -> Video fits X. Height is 2x screen.
+                // We see 1/2 of texture height.
+                // repeat.y = 0.5 = videoAspect / screenAspect (0.5 / 1.0). 
+                // Wait, logic above said repeat.y = videoAspect/screenAspect.
+                // Let's verification:
+                // screenAspect/videoAspect = 1/0.5 = 2.0.
+                // videoAspect/screenAspect = 0.5/1 = 0.5.
+                // We want 0.5. 
+                // So: repeat.x = 1; repeat.y = videoAspect / screenAspect;
+                // BUT wait.
+                // Case: VideoAspect < ScreenAspect. 
+                // e.g. Video 0.5, Screen 1.0.
+                // My logic says repeat.y = 0.5.
+
+                // Let's re-read the previous code block.
+                // if (videoAspect < screenAspect) { ... repeatX = screenAspect / videoAspect ... }
+                // previous code: 1.0 / 0.5 = 2.0. repeat.x = 2.0.
+                // That was "Contain" (roughly, or rather 'Fill Width and stretch height?').
+                // Actually if repeat.x=2, we see 2 copies of texture width?
+                // No.
+
+                // Let's stick to the trusted formula for COVER:
+                if (screenAspect > videoAspect) {
+                    // Screen is wider than video. Fit Width (scale up video). Crop Height (Top/Bottom).
+                    // Actually: If screen is wider, we must match WIDTH to cover?
+                    // Video 100x100 (1.0). Screen 200x100 (2.0).
+                    // We must scale Video to 200x200.
+                    // We display full Width of video? No.
+                    // We display 200 width. Texture has 100.
+                    // We see only HALF of the texture height? No.
+                    // We see full texture width?
+                    // If we map 0..1 mesh to 0..1 texture.
+                    // Mesh is 2:1. Texture is 1:1.
+                    // Image looks stretched wide.
+                    // We want to correct aspect.
+                    // We want to show LESS height? or LESS width?
+                    // To keep aspect 1:1 on a 2:1 screen...
+                    // We must zoom in.
+                    // We show full width (1.0).
+                    // We show 0.5 height? No.
+                    // If we show full width (200 screen units), and we want 1:1 aspect.
+                    // Height should be 200 screen units. But screen is only 100.
+                    // So we show 100/200 = 0.5 of the image height.
+                    // So repeat.x = 1. repeat.y = 0.5.
+                    // 0.5 = videoAspect (1) / screenAspect (2).
+                    // Formula: `repeat.x = 1`, `repeat.y = videoAspect / screenAspect`.
+
+                    treeTexture.repeat.set(1, videoAspect / screenAspect);
+                    treeTexture.offset.set(0, (1 - (videoAspect / screenAspect)) / 2);
+                } else {
+                    // Screen is taller than video (or equal).
+                    // e.g. Screen 1:2 (0.5). Video 1:1 (1.0).
+                    // We must match Height (scale video to height 200).
+                    // Video becomes 200x200.
+                    // Screen is 100x200.
+                    // We show full Height (1.0).
+                    // We show 100/200 = 0.5 of image width.
+                    // repeat.y = 1.
+                    // repeat.x = screenAspect / videoAspect. (0.5 / 1.0 = 0.5).
+
+                    treeTexture.repeat.set(screenAspect / videoAspect, 1);
+                    treeTexture.offset.set((1 - (screenAspect / videoAspect)) / 2, 0);
+                }
             } else {
-                // Wideo jest szersze - dodajemy pasy góra/dół (choć tu celujemy w pionowe)
-                const repeatY = videoAspect / screenAspect;
-                treeTexture.repeat.set(1, repeatY);
-                treeTexture.offset.set(0, (1 - repeatY) / 2);
+                // videoAspect >= screenAspect.
+                // Handled in the 'else' of my thought process, but let's structure code properly.
+
+                // Simplified:
+                const factorX = screenAspect / videoAspect;
+                const factorY = videoAspect / screenAspect;
+
+                if (factorX > 1) { // Screen wider than video -> fit width, crop height?
+                    // Wait. If screen wider, we need to match Width? 
+                    // No, if screen is WIDER, we match WIDTH to cover.
+                    // If we match Height, we would have black bars on sides (Contain).
+                    // So yes, match width.
+
+                    // repeat.x = 1.
+                    // repeat.y = factorY. (0.5 example).
+                    treeTexture.repeat.set(1, factorY);
+                    treeTexture.offset.set(0, (1 - factorY) / 2);
+                } else {
+                    // Screen taller/narrower.
+                    // Match Height. Crop Width.
+                    // repeat.y = 1.
+                    // repeat.x = factorX.
+                    treeTexture.repeat.set(factorX, 1);
+                    treeTexture.offset.set((1 - factorX) / 2, 0);
+                }
             }
         });
 
@@ -678,80 +768,9 @@ Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)
         }
         animate();
 
-        // 7. WIDEO PROMOCYJNE (Po lewej od logo)
-        const video = document.createElement('video');
-        video.src = '/assets/video/flowassist-promo.mp4';
-        video.loop = true;
-        video.muted = true;
-        video.playsInline = true;
-        video.crossOrigin = 'anonymous';
-        video.play();
 
-        const videoTexture = new THREE.VideoTexture(video);
-        videoTexture.minFilter = THREE.LinearFilter;
-        videoTexture.magFilter = THREE.LinearFilter;
-        videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-        // Startowa geometria (zostanie zaktualizowana)
-        const videoGeo = new THREE.PlaneGeometry(1, 1);
-        const videoMat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.DoubleSide, transparent: true });
-        const videoMesh = new THREE.Mesh(videoGeo, videoMat);
 
-        // Pozycja początkowa
-        videoMesh.position.set(-4.5, 1.75, -2.5);
-        videoMesh.rotation.y = Math.PI * 0.1;
-        scene.add(videoMesh);
-
-        // Automatyczna korekta proporcji po załadowaniu wideo
-        video.addEventListener('loadedmetadata', () => {
-            const aspect = video.videoWidth / video.videoHeight;
-            const height = 1.75; // Stała wysokość
-            const width = height * aspect;
-
-            videoMesh.geometry.dispose();
-            videoMesh.geometry = new THREE.PlaneGeometry(width, height);
-
-            // PRZYBLIŻENIE MAKSYMALNE DO EKRANU
-            // Krawędź ekranu (drzewa) jest na X = -2.4
-            // Chcemy, by prawa krawędź wideo dotykała lewej krawędzi ekranu (z minimalnym odstępem)
-            // X wideo = Krawędź (-2.4) - Połowa szerokości wideo (width/2) - Margines (0.05)
-
-            videoMesh.position.x = -2.4 - (width / 2) - 0.05;
-
-            console.log(`Video updated. Pos X: ${videoMesh.position.x}, Size: ${width}x${height}`);
-        });
-
-        // Fix transparency artifacts
-        videoMesh.renderOrder = 999;
-        videoMat.depthWrite = false;
-
-        // === PRZYCISK DŹWIĘKU ===
-        const soundBtn = document.createElement('button');
-        soundBtn.textContent = '🔊 Włącz dźwięk';
-        soundBtn.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 30px;
-            font-size: 14px;
-            cursor: pointer;
-            z-index: 1000;
-            transition: all 0.3s;
-        `;
-        soundBtn.onmouseover = () => soundBtn.style.background = 'rgba(50,50,50,0.9)';
-        soundBtn.onmouseout = () => soundBtn.style.background = 'rgba(0,0,0,0.8)';
-        document.body.appendChild(soundBtn);
-
-        soundBtn.addEventListener('click', () => {
-            video.muted = false;
-            video.volume = 0.7;
-            if (video.paused) video.play();
-            soundBtn.remove();
-        });
 
         // Uruchomienie sekwencji animacji (bezpiecznie)
         try {
