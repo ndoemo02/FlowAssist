@@ -347,7 +347,7 @@ Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)
         const panelMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const screenFrontMat = new THREE.MeshBasicMaterial({
             map: treeTexture,
-            transparent: true,
+            transparent: false, // Wyłączone - zapobiega "duchom" / nakładaniu warstw
             toneMapped: false // Ważne: ignoruje tone mapping, zachowuje oryginalne kolory
         });
 
