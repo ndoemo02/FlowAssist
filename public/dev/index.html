@@ -750,7 +750,11 @@ Target LOOK: x:${controls.target.x.toFixed(2)}, y:${controls.target.y.toFixed(2)
 
                 // Animacja ZNIKANIA (Fade Out) kontrolowana przez suwak
                 let targetAlpha = 1.0;
-                if (time > textParams.fadeOutStart && !textParams.manualFade) {
+
+                // FORMATION GLOW: Mocne świecenie podczas formowania napisu
+                if (progress < 1.0) {
+                    targetAlpha = 3.0; // Intensywne żarzenie się cząsteczek podczas lotu
+                } else if (time > textParams.fadeOutStart && !textParams.manualFade) {
                     targetAlpha = 0.0;
                 } else if (textParams.manualFade) {
                     targetAlpha = 0.0;
