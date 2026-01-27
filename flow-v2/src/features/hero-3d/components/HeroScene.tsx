@@ -2,13 +2,14 @@
 
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Environment, OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { Environment, OrbitControls } from '@react-three/drei';
 import GalaxyStudioModel, { SampleObject } from './GalaxyStudioModel';
 import { StarField, CosmicSnow } from './GalaxyEffects';
 import GalaxyLighting from './GalaxyLighting';
-import DevCameraConfig from './DevCameraConfig';
+// import DevCameraConfig from './DevCameraConfig'; // Disabled
+import ResponsiveCameraRig from './ResponsiveCameraRig';
 
-export default function HeroScene({ config }: { config?: any }) {
+export default function HeroScene() {
     return (
         <Canvas
             shadows
@@ -22,16 +23,23 @@ export default function HeroScene({ config }: { config?: any }) {
         >
             <color attach="background" args={['#050208']} />
 
-            <DevCameraConfig config={config} />
+            {/* Camera Rig handles position for Mobile/Desktop */}
+            <ResponsiveCameraRig />
 
+            {/* Optional: OrbitControls for Desktop interactivity, but might fight Rig on Mobile.
+                For now, let's keep them accessible but maybe restricted, 
+                or rely on Rig to override if it runs every frame. 
+                If Rig uses Lerp, OrbitControls might fight. 
+                Safest for "Calibration" is to disable them to guarantee exact view.
+             */}
             <OrbitControls
-                enableZoom={true}
+                enableZoom={false}
                 enablePan={false}
-                maxPolarAngle={Math.PI / 1.8}
-                minPolarAngle={Math.PI / 2.2}
-                minDistance={2}
-                maxDistance={50}
-                dampingFactor={0.05}
+                enableRotate={true} // Allow slight rotation if user wants to look around?
+                // But Rig is calling lookAt every frame.
+                // If Rig is active, OrbitControls logic will be overridden or cause jitter.
+                // Let's disable them to ensure the calibrated view is pure.
+                enabled={false}
             />
 
             <Suspense fallback={null}>
@@ -47,10 +55,3 @@ export default function HeroScene({ config }: { config?: any }) {
         </Canvas>
     );
 }
-
-// Keep the logic for future use, but commented out or separate
-/*
-function ResponsiveCameraRig() {
-    // ... logic ...
-}
-*/
