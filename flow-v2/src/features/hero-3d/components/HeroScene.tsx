@@ -32,15 +32,7 @@ export default function HeroScene() {
                 If Rig uses Lerp, OrbitControls might fight. 
                 Safest for "Calibration" is to disable them to guarantee exact view.
              */}
-            <OrbitControls
-                enableZoom={false}
-                enablePan={false}
-                enableRotate={true} // Allow slight rotation if user wants to look around?
-                // But Rig is calling lookAt every frame.
-                // If Rig is active, OrbitControls logic will be overridden or cause jitter.
-                // Let's disable them to ensure the calibrated view is pure.
-                enabled={false}
-            />
+            {/* OrbitControls REMOVED to stop auto-rotation/interaction */}
 
             <Suspense fallback={null}>
                 <Environment preset="night" blur={0.8} background={false} />

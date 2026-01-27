@@ -20,11 +20,6 @@ export function StarField({ count = 12000 }) {
         return pos;
     }, [count]);
 
-    useFrame((state) => {
-        if (points.current) {
-            points.current.rotation.y = state.clock.getElapsedTime() * 0.02;
-        }
-    });
 
     return (
         <points ref={points}>
@@ -61,6 +56,7 @@ export function CosmicSnow({ count = 400 }) {
         return temp;
     }, [count]);
 
+    /*
     useFrame((state) => {
         if (!mesh.current) return;
         particles.forEach((particle, i) => {
@@ -79,6 +75,7 @@ export function CosmicSnow({ count = 400 }) {
             child.scale.set(s * 0.5, s * 0.5, s * 0.5);
         });
     });
+    */
 
     return (
         <group ref={mesh}>
