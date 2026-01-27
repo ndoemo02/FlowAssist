@@ -178,7 +178,7 @@ function StarField({ count = 8000 }) {
 
     useFrame((state) => {
         if (points.current) {
-            points.current.rotation.y = state.clock.getElapsedTime() * 0.01;
+            // points.current.rotation.y = state.clock.getElapsedTime() * 0.01;
         }
     });
 
@@ -209,6 +209,7 @@ function CosmicSnow({ count = 300 }) {
         return temp;
     }, [count]);
 
+    /*
     useFrame(() => {
         if (!mesh.current) return;
         particles.forEach((particle, i) => {
@@ -224,6 +225,7 @@ function CosmicSnow({ count = 300 }) {
             );
         });
     });
+    */
 
     return (
         <group ref={mesh}>
@@ -298,8 +300,7 @@ export default function HomePage() {
                             ref={controlsRef}
                             enablePan={false}
                             enableZoom={false}
-                            autoRotate={true}
-                            autoRotateSpeed={0.5}
+                            autoRotate={false}
                             minPolarAngle={Math.PI / 2.5}
                             maxPolarAngle={Math.PI / 1.8}
                         />
