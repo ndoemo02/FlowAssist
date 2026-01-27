@@ -1,5 +1,11 @@
-// import ResponsiveCameraRig from './ResponsiveCameraRig'; // Temporarily disabled
-// import DevCameraPanel from './DevCameraPanel'; // Disabled in favor of HTML panel in page.tsx
+'use client';
+
+import { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { Environment, OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import GalaxyStudioModel, { SampleObject } from './GalaxyStudioModel';
+import { StarField, CosmicSnow } from './GalaxyEffects';
+import GalaxyLighting from './GalaxyLighting';
 import DevCameraConfig from './DevCameraConfig';
 
 export default function HeroScene({ config }: { config?: any }) {
@@ -42,43 +48,9 @@ export default function HeroScene({ config }: { config?: any }) {
     );
 }
 
-import { useThree, useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-
+// Keep the logic for future use, but commented out or separate
+/*
 function ResponsiveCameraRig() {
-    const { camera, size } = useThree();
-
-    useFrame(() => {
-        // Oblicz aspekt (szerokość / wysokość)
-        const aspect = size.width / size.height;
-
-        // Bazowa odległość dla szerokich ekranów (Desktop)
-        const baseDist = 5.0;
-
-        // Logika "Cover": jeśli ekran jest wąski (Mobile), odsuń kamerę
-        // Im węższy ekran, tym większy dystans
-        let targetZ = baseDist;
-
-        if (aspect < 1.0) {
-            // Mobile (Portrait)
-            // Empiryczny wzór: im mniejszy aspekt, tym dalej kamera
-            // Np. dla aspect 0.5 (telefon) -> 5.0 / 0.5 = 10.0
-            // Dzielimy przez aspekt z lekkim tłumieniem, żeby nie uciekła za daleko
-            targetZ = baseDist / (aspect * 0.85);
-        }
-
-        // Płynna interpolacja pozycji kamery
-        camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.1);
-
-        // Zawsze patrz w środek (0, 0.5, 0) - lekko w górę
-        camera.lookAt(0, 0.5, 0);
-    });
-
-    return (
-        <PerspectiveCamera
-            makeDefault
-            position={[0, 0.5, 5.0]} // Startowa pozycja
-            fov={60}
-        />
-    );
+    // ... logic ...
 }
+*/
