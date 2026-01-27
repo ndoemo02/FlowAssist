@@ -1,16 +1,8 @@
-'use client';
-
-import { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { Environment, OrbitControls, PerspectiveCamera } from '@react-three/drei';
-import GalaxyStudioModel, { SampleObject } from './GalaxyStudioModel';
-import { StarField, CosmicSnow } from './GalaxyEffects';
-import GalaxyLighting from './GalaxyLighting';
-
 // import ResponsiveCameraRig from './ResponsiveCameraRig'; // Temporarily disabled
-import DevCameraPanel from './DevCameraPanel';
+// import DevCameraPanel from './DevCameraPanel'; // Disabled in favor of HTML panel in page.tsx
+import DevCameraConfig from './DevCameraConfig';
 
-export default function HeroScene() {
+export default function HeroScene({ config }: { config?: any }) {
     return (
         <Canvas
             shadows
@@ -24,8 +16,7 @@ export default function HeroScene() {
         >
             <color attach="background" args={['#050208']} />
 
-            {/* <ResponsiveCameraRig /> */}
-            <DevCameraPanel />
+            <DevCameraConfig config={config} />
 
             <OrbitControls
                 enableZoom={true}
