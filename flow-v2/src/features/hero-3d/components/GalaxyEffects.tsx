@@ -20,13 +20,11 @@ export function StarField({ count = 12000 }) {
         return pos;
     }, [count]);
 
-    /*
     useFrame((state) => {
         if (points.current) {
             points.current.rotation.y = state.clock.getElapsedTime() * 0.02;
         }
     });
-    */
 
     return (
         <points ref={points}>
@@ -63,14 +61,24 @@ export function CosmicSnow({ count = 400 }) {
         return temp;
     }, [count]);
 
-    /*
     useFrame((state) => {
         if (!mesh.current) return;
         particles.forEach((particle, i) => {
-             // ... animation logic ...
+            let { t, factor, speed, xFactor, yFactor, zFactor } = particle;
+            t = particle.t += speed / 2;
+            const a = Math.cos(t) + Math.sin(t * 1) / 10;
+            const b = Math.sin(t) + Math.cos(t * 2) / 10;
+            const s = Math.cos(t);
+
+            const child = mesh.current!.children[i] as THREE.Mesh;
+            child.position.set(
+                a + xFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
+                b + yFactor + Math.sin((t / 10) * factor) + (Math.cos(t * 2) * factor) / 10,
+                b + zFactor + Math.cos((t / 10) * factor) + (Math.sin(t * 3) * factor) / 10
+            );
+            child.scale.set(s * 0.5, s * 0.5, s * 0.5);
         });
     });
-    */
 
     return (
         <group ref={mesh}>
