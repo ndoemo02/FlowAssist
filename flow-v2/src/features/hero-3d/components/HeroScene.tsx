@@ -7,6 +7,9 @@ import GalaxyStudioModel, { SampleObject } from './GalaxyStudioModel';
 import { StarField, CosmicSnow } from './GalaxyEffects';
 import GalaxyLighting from './GalaxyLighting';
 
+// import ResponsiveCameraRig from './ResponsiveCameraRig'; // Temporarily disabled
+import DevCameraPanel from './DevCameraPanel';
+
 export default function HeroScene() {
     return (
         <Canvas
@@ -21,7 +24,8 @@ export default function HeroScene() {
         >
             <color attach="background" args={['#050208']} />
 
-            <ResponsiveCameraRig />
+            {/* <ResponsiveCameraRig /> */}
+            <DevCameraPanel />
 
             <OrbitControls
                 enableZoom={true}
@@ -29,7 +33,7 @@ export default function HeroScene() {
                 maxPolarAngle={Math.PI / 1.8}
                 minPolarAngle={Math.PI / 2.2}
                 minDistance={2}
-                maxDistance={20} // Zwiekszony zakres dla mobile
+                maxDistance={50}
                 dampingFactor={0.05}
             />
 
