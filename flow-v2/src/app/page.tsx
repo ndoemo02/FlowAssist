@@ -13,6 +13,7 @@ const HeroScene = dynamic(() => import('@/features/hero-3d/components/HeroScene'
 export default function Home() {
   // Mobile Camera Calibration State
   const [camConfig, setCamConfig] = useState({
+    x: 0,
     z: 10.0,
     y: 0.5,
     targetY: 0.5,
@@ -28,11 +29,16 @@ export default function Home() {
       {showDev && (
         <div className="fixed bottom-0 left-0 w-full z-50 bg-black/90 p-4 border-t border-green-500 text-green-400 font-mono text-xs">
           <div className="flex justify-between mb-2">
-            <h3 className="font-bold">MOBILE CALIBRATION V2</h3>
+            <h3 className="font-bold">MOBILE CALIBRATION V3 (POS X)</h3>
             <button onClick={() => setShowDev(false)} className="text-red-500">[CLOSE]</button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-gray-400">Pos X: {camConfig.x.toFixed(1)}</label>
+              <input type="range" min="-10" max="10" step="0.5" value={camConfig.x}
+                onChange={e => setCamConfig(c => ({ ...c, x: parseFloat(e.target.value) }))} className="w-full accent-green-500" />
+            </div>
             <div>
               <label className="block text-gray-400">Dist (Z): {camConfig.z.toFixed(1)}</label>
               <input type="range" min="2" max="30" step="0.5" value={camConfig.z}
@@ -55,7 +61,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-2 text-[10px] text-gray-500 select-all">
-            {`z:${camConfig.z}, y:${camConfig.y}, ty:${camConfig.targetY}, fov:${camConfig.fov}`}
+            {`x:${camConfig.x}, z:${camConfig.z}, y:${camConfig.y}, ty:${camConfig.targetY}, fov:${camConfig.fov}`}
           </div>
         </div>
       )}
@@ -104,6 +110,15 @@ export default function Home() {
             <br />
             <span className="text-signal-cyan">You don't miss calls. You filter them.</span>
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+            className="pointer-events-auto pt-8"
+          >
+            <div className="h-16 w-[1px] bg-gradient-to-b from-signal-cyan to-transparent mx-auto" />
+          </motion.div>
         </div>
       </div>
     </main>

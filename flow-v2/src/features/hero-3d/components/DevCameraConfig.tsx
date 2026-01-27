@@ -1,15 +1,24 @@
 'use client';
 
 import { useThree, useFrame } from '@react-three/fiber';
-import { useEffect } from 'react';
 import * as THREE from 'three';
 
-export default function DevCameraConfig({ config }: { config?: { z: number; y: number; fov: number; targetY: number } }) {
+export interface DevConfig {
+    x?: number;
+    z: number;
+    y: number;
+    fov: number;
+    targetY: number;
+}
+
+export default function DevCameraConfig({ config }: { config?: DevConfig }) {
     const { camera } = useThree();
 
     useFrame(() => {
         if (!config) return;
 
+        // Apply X if present, default to 0
+        camera.position.x = config.x ?? 0;
         camera.position.z = config.z;
         camera.position.y = config.y;
 
