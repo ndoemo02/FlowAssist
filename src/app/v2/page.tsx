@@ -13,7 +13,7 @@ function CityModel() {
     const { scene } = useGLTF('/models/map_lviv_ukraine.glb');
     return (
         <Center>
-            <primitive object={scene} scale={[0.1, 0.1, 0.1]} />
+            <primitive object={scene} scale={[1, 1, 1]} />
         </Center>
     );
 }
@@ -28,10 +28,11 @@ export default function V2Page() {
                 <p className="text-gray-400 text-sm">Loaded: map_lviv_ukraine.glb</p>
                 <div className="mt-2 text-xs text-gray-500">
                     <p>Controls: Left Click to Rotate, Right Click to Pan, Wheel to Zoom</p>
+                    <p className="text-red-400">Fix Applied: Scale x1, Clipping Planes Adjusted</p>
                 </div>
             </div>
 
-            <Canvas camera={{ position: [0, 50, 100], fov: 45, far: 100000 }}>
+            <Canvas camera={{ position: [0, 500, 1000], fov: 45, near: 0.1, far: 200000 }}>
                 <Suspense fallback={<Loader />}>
                     <color attach="background" args={['#050505']} />
 
