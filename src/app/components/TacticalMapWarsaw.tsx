@@ -12,16 +12,17 @@ export default function TacticalMapWarsaw() {
 
     return (
         <div className="relative w-full h-[600px] bg-[#050505] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-            {/* Background Map Simulation */}
-            <div className="absolute inset-0 opacity-40 bg-[#0a0a0a]">
+            {/* Background Map Simulation (Warsaw) */}
+            <div className="absolute inset-0 opacity-80 bg-[#050505]">
                 <div
-                    className="absolute inset-0 bg-cover bg-center grayscale mix-blend-screen"
+                    className="absolute inset-0 bg-cover bg-center"
                     style={{
-                        backgroundImage: `url('https://basemaps.cartocdn.com/dark_all/12/2321/1393.png')`, // Example tile of Warsaw region
-                        backgroundSize: 'cover'
+                        backgroundImage: `url('https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/21.0122,52.2297,11,0/1200x600?access_token=pk.eyJ1IjoiYW50aWdyYXZpdHktYWkiLCJhIjoiY202bm41OW9vMDJlajJqcXBrYzR6ZGN6dSJ9')`,
+                        backgroundSize: 'cover',
+                        filter: 'brightness(0.7) contrast(1.2)'
                     }}
                 />
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.15)_1px,transparent_1px)] bg-[size:60px_60px]" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
             </div>
 
