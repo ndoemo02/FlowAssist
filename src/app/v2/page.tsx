@@ -1,13 +1,21 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment, Stars } from '@react-three/drei';
+import { OrbitControls, useGLTF, Environment, Stars, Center, Html, useProgress } from '@react-three/drei';
 import { Suspense } from 'react';
 
+function Loader() {
+    const { progress } = useProgress();
+    return <Html center className="text-white">{progress.toFixed(0)}% loaded</Html>;
+}
+
 function CityModel() {
-    // Loading the Lviv model as requested (assuming this is the "Kyiv" model user referred to, or closest match)
     const { scene } = useGLTF('/models/map_lviv_ukraine.glb');
-    return <primitive object={scene} scale={[1, 1, 1]} />;
+    return (
+        <Center>
+            <primitive object={scene} scale={[0.1, 0.1, 0.1]} />
+        </Center>
+    );
 }
 
 export default function V2Page() {
@@ -23,8 +31,8 @@ export default function V2Page() {
                 </div>
             </div>
 
-            <Canvas camera={{ position: [5, 5, 5], fov: 45 }}>
-                <Suspense fallback={null}>
+            <Canvas camera={{ position: [0, 50, 100], fov: 45, far: 100000 }}>
+                <Suspense fallback={<Loader />}>
                     <color attach="background" args={['#050505']} />
 
                     {/* Lighting setup for "Cosmic" look */}
