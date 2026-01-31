@@ -31,11 +31,17 @@ export default function GalaxyStudioModel({ config = { rotY: 1.64, scale: 0.6 } 
                     // 1. SCREEN
                     if (name.includes('object003') || name.includes('screen') || name.includes('monitor')) {
                         child.visible = true;
+
+                        // Fix for streaking artifacts: Use RepeatWrapping instead of ClampToEdge
+                        videoTex.wrapS = THREE.RepeatWrapping;
+                        videoTex.wrapT = THREE.RepeatWrapping;
+                        videoTex.flipY = false; // GLTF standard usually requires false, try toggling this if upside down
+
                         (child as THREE.Mesh).material = new THREE.MeshBasicMaterial({
                             map: videoTex,
-                            toneMapped: false
+                            toneMapped: false,
+                            side: THREE.DoubleSide
                         });
-                        videoTex.flipY = true;
                         return;
                     }
 
