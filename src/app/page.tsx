@@ -280,34 +280,6 @@ function CameraSetup({ setupData, controlsRef }: { setupData: CamSetupData | nul
     return null;
 }
 
-function IntroLogo() {
-    const tex = useTexture('/assets/textures/logo_flowassist.png');
-    const ref = useRef<THREE.Mesh>(null);
-
-    useFrame((state) => {
-        if (ref.current) {
-            // Floating animation
-            ref.current.position.y = 1.2 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
-            // Billboard effect (always face camera)
-            ref.current.lookAt(state.camera.position);
-        }
-    });
-
-    return (
-        <mesh ref={ref} position={[0, 1.2, 0]} scale={[2, 2, 1]}>
-            <planeGeometry />
-            <meshStandardMaterial
-                map={tex}
-                transparent
-                opacity={1}
-                side={THREE.DoubleSide}
-                depthWrite={false}
-                toneMapped={false}
-            />
-        </mesh>
-    );
-}
-
 // --- LANDING PAGE KOMPONENT ---
 export default function HomePage() {
     const [camSetup, setCamSetup] = useState<CamSetupData | null>(null);
@@ -334,7 +306,7 @@ export default function HomePage() {
                         <LightingReveal />
                         <Suspense fallback={null}>
                             <StudioModel onCamSetup={setCamSetup} />
-                            <IntroLogo />
+                            <SwarmLogo />
                             <Environment preset="night" blur={0.8} background={false} />
                         </Suspense>
                         <CameraSetup setupData={camSetup} controlsRef={controlsRef} />
@@ -349,21 +321,9 @@ export default function HomePage() {
                     </Canvas>
                 </div>
 
-                {/* OVERLAY INTRO TEXT */}
+                {/* OVERLAY INTRO TEXT REMOVED (Replaced by 3D SwarmLogo) */}
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none p-6">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.5 }}
-                        className="text-center"
-                    >
-                        <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 via-purple-300 to-white drop-shadow-2xl">
-                            FlowAssist
-                        </h1>
-                        <p className="text-xl md:text-2xl text-purple-200/80 font-light tracking-wide max-w-lg mx-auto">
-                            The silence you need.<br />The response they deserve.
-                        </p>
-                    </motion.div>
+                    {/* Placeholder for layout spacing if needed, but text is now in 3D */}
                 </div>
 
                 <div className="absolute bottom-10 left-0 right-0 z-10 flex justify-center animate-bounce pointer-events-none">
@@ -449,5 +409,92 @@ export default function HomePage() {
             </section>
 
         </main>
+    );
+}
+
+function SwarmLogo() {
+    const tex = useTexture('/assets/textures/logo_flowassist.png');
+    const points = useRef<THREE.Points>(null);
+
+    // Shader Uniforms
+    const uniforms = useMemo(() => ({
+        uTex: { value: tex },
+        uTime: { value: 0 },
+        uProgress: { value: 0 }
+    }), [tex]);
+
+    useFrame((state) => {
+        if (points.current) {
+            const material = points.current.material as THREE.ShaderMaterial;
+            material.uniforms.uTime.value = state.clock.elapsedTime;
+
+            // Animate progress from 0 to 1 smoothly
+            material.uniforms.uProgress.value = THREE.MathUtils.lerp(
+                material.uniforms.uProgress.value,
+                1,
+                0.015 // Speed of formation
+            );
+        }
+    });
+
+    const vertexShader = `
+        uniform float uTime;
+        uniform float uProgress;
+        varying vec2 vUv;
+        varying float vAlpha;
+
+        // Simple noise 
+        float random(vec2 st) {
+            return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+        }
+
+        void main() {
+            vUv = uv;
+            vec3 pos = position;
+            
+            // Generate a random scatter direction based on UV
+            float r = random(uv) * 2.0 * 3.14159;
+            float dist = random(uv + 1.0) * 10.0;
+            
+            vec3 scatteredPos = pos + vec3(cos(r) * dist, sin(r) * dist, dist * 0.5);
+            
+            // Wavy floating effect when formed
+            float wave = sin(pos.x * 2.0 + uTime) * 0.1;
+            pos.y += wave;
+
+            // Mix scatter and formed state
+            vec3 finalPos = mix(scatteredPos, pos, smoothstep(0.0, 1.0, uProgress));
+
+            vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
+            gl_PointSize = 3.0 * (2.0 / -mvPosition.z); // Size attenuation
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    `;
+
+    const fragmentShader = `
+        uniform sampler2D uTex;
+        varying vec2 vUv;
+
+        void main() {
+            vec4 texColor = texture2D(uTex, vUv);
+            if (texColor.a < 0.2) discard; // Discard transparent pixels
+            
+            // Cyan/Blue electric look
+            gl_FragColor = vec4(0.4, 0.8, 1.0, 1.0); 
+        }
+    `;
+
+    return (
+        <points ref={points} position={[0, -0.2, 2.5]} scale={[3, 1.5, 1]} rotation={[0, 0, 0]}>
+            <planeGeometry args={[1, 1, 128, 64]} />
+            <shaderMaterial
+                uniforms={uniforms}
+                vertexShader={vertexShader}
+                fragmentShader={fragmentShader}
+                transparent={true}
+                depthWrite={false}
+                blending={THREE.AdditiveBlending}
+            />
+        </points>
     );
 }
