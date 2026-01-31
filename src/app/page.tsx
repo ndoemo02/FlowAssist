@@ -477,23 +477,23 @@ function SwarmLogo() {
 
         void main() {
             vec4 texColor = texture2D(uTex, vUv);
-            if (texColor.a < 0.2) discard; // Discard transparent pixels
+            if (texColor.a < 0.1) discard; 
             
-            // Cyan/Blue electric look
-            gl_FragColor = vec4(0.4, 0.8, 1.0, 1.0); 
+            // Use original color mixed with electric blue based on alpha/intensity
+            gl_FragColor = texColor;
         }
     `;
 
     return (
-        <points ref={points} position={[0, -0.2, 2.5]} scale={[3, 1.5, 1]} rotation={[0, 0, 0]}>
-            <planeGeometry args={[1, 1, 128, 64]} />
+        <points ref={points} position={[0, 0.5, 3.5]} scale={[4, 2, 1]} rotation={[0, 0, 0]}>
+            <planeGeometry args={[1, 1, 256, 128]} />
             <shaderMaterial
                 uniforms={uniforms}
                 vertexShader={vertexShader}
                 fragmentShader={fragmentShader}
                 transparent={true}
                 depthWrite={false}
-                blending={THREE.AdditiveBlending}
+                blending={THREE.NormalBlending}
             />
         </points>
     );
