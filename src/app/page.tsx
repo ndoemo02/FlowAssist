@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, useGLTF, Environment, OrbitControls, useVideoTexture } from '@react-three/drei';
+import { Html, useGLTF, Environment, OrbitControls, useVideoTexture, useTexture } from '@react-three/drei';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { motion, useScroll, useTransform } from 'framer-motion';
