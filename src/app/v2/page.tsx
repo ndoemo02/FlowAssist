@@ -2,21 +2,21 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment, Stars, Html, useProgress, Stage, PerspectiveCamera } from '@react-three/drei';
-import { Suspense, useLayoutEffect, useMemo } from 'react';
+import { Suspense } from 'react';
 import * as THREE from 'three';
 
 function Loader() {
     const { progress } = useProgress();
-    return <Html center className="text-white bg-black/80 p-6 rounded-2xl border border-cyan-500/20 backdrop-blur-md shadow-[0_0_50px_rgba(6,182,212,0.1)]">
+    return <Html center className="text-white bg-black/80 p-6 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl">
         <div className="flex flex-col items-center gap-4 min-w-[200px]">
             <div className="relative w-full h-1 bg-white/5 rounded-full overflow-hidden">
                 <div
-                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300"
+                    className="absolute inset-y-0 left-0 bg-white transition-all duration-300"
                     style={{ width: `${progress}%` }}
                 />
             </div>
             <div className="flex justify-between w-full text-[10px] font-mono">
-                <span className="text-cyan-400 uppercase tracking-widest text-[8px]">Initializing Tactical Grid</span>
+                <span className="text-gray-400 uppercase tracking-widest text-[8px]">Loading City Data</span>
                 <span className="text-white text-[8px]">{progress.toFixed(0)}%</span>
             </div>
         </div>
@@ -25,106 +25,39 @@ function Loader() {
 
 function CityModel() {
     const { scene } = useGLTF('/models/map_lviv_ukraine.glb');
-
-    const tacticalMaterial = useMemo(() => new THREE.MeshStandardMaterial({
-        color: '#080c14',
-        metalness: 0.9,
-        roughness: 0.1,
-        emissive: '#051020',
-        emissiveIntensity: 0.5,
-    }), []);
-
-    const wireframeMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-        color: '#22d3ee',
-        wireframe: true,
-        transparent: true,
-        opacity: 0.08,
-    }), []);
-
-    useLayoutEffect(() => {
-        scene.traverse((node) => {
-            // Guard to prevent infinite recursion and only process original meshes
-            if ((node as THREE.Mesh).isMesh && !node.userData.processed) {
-                const mesh = node as THREE.Mesh;
-                mesh.userData.processed = true;
-
-                mesh.material = tacticalMaterial;
-
-                // Add wireframe overlay without recursing
-                const wire = mesh.clone(false);
-                wire.material = wireframeMaterial;
-                wire.userData.processed = true; // Mark clone as processed
-                mesh.add(wire);
-            }
-        });
-    }, [scene, tacticalMaterial, wireframeMaterial]);
-
     return <primitive object={scene} />;
 }
 
 export default function V2Page() {
     return (
-        <main className="w-full h-screen bg-[#02040a] relative overflow-hidden">
-            {/* Tactical HUD */}
-            <div className="absolute top-8 left-8 z-10 space-y-4 pointer-events-none">
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <div className="w-3 h-3 rounded-full bg-cyan-500 animate-ping absolute inset-0 opacity-20" />
-                        <div className="w-3 h-3 rounded-full bg-cyan-400 relative border border-white/20" />
-                    </div>
-                    <div className="h-px w-12 bg-gradient-to-r from-cyan-500 to-transparent" />
-                    <h1 className="text-2xl font-black text-white tracking-widest uppercase italic border-r-4 border-cyan-500 pr-4">
-                        Sector <span className="text-cyan-400">Flow-01</span>
-                    </h1>
-                </div>
-                <div className="bg-black/40 border-l-2 border-cyan-500/50 p-4 backdrop-blur-sm">
-                    <div className="text-[9px] text-cyan-400 uppercase tracking-[0.3em] font-bold mb-2">
-                        Tactical Intelligence Layer
-                    </div>
-                    <div className="text-[11px] text-gray-400 font-mono leading-relaxed">
-                        <span className="text-gray-600">POS:</span> 52.2297N / 21.0122E<br />
-                        <span className="text-gray-600">VAL:</span> DET_GATE_ACTIVE<br />
-                        <span className="text-gray-600">OBJ:</span> KYIV/LVIV_SURVEY
-                    </div>
-                </div>
-            </div>
-
-            <Canvas shadows={false} gl={{ antialias: true, logarithmicDepthBuffer: true }}>
+        <main className="w-full h-screen bg-[#111] relative overflow-hidden">
+            <Canvas shadows gl={{ antialias: true, logarithmicDepthBuffer: true }}>
                 <Suspense fallback={<Loader />}>
-                    <color attach="background" args={['#02040a']} />
+                    <color attach="background" args={['#111']} />
 
                     <Stage
                         adjustCamera={1}
-                        intensity={0.1}
-                        environment="night"
-                        preset="portrait"
-                        shadows={false}
+                        intensity={0.6}
+                        environment="city"
+                        preset="rembrandt"
+                        shadows={true}
                         center
                     >
                         <CityModel />
                     </Stage>
 
-                    <Stars radius={300} depth={50} count={8000} factor={4} saturation={0} fade speed={0.5} />
+                    <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
 
-                    {/* Closer initial position for that "In-the-city" feel */}
-                    <PerspectiveCamera makeDefault position={[30, 25, 30]} fov={40} />
+                    <PerspectiveCamera makeDefault position={[50, 50, 50]} fov={50} />
 
                     <OrbitControls
                         makeDefault
-                        minDistance={0.5}
-                        maxDistance={400}
-                        maxPolarAngle={Math.PI / 2.2}
+                        minDistance={1}
+                        maxDistance={500}
                         enableDamping={true}
-                        dampingFactor={0.05}
                     />
                 </Suspense>
             </Canvas>
-
-            {/* Tactical Overlay */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,4,10,0.6)_100%)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(0,255,255,0.02),rgba(0,0,0,0),rgba(255,0,255,0.02))] z-20 bg-[length:100%_4px,3px_100%] opacity-40" />
-            </div>
         </main>
     );
 }
