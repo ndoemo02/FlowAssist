@@ -52,10 +52,15 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                     child.visible = true;
                     const mesh = child as THREE.Mesh;
 
-                    // Fix for artifacts
-                    videoTex.wrapS = THREE.RepeatWrapping;
-                    videoTex.wrapT = THREE.RepeatWrapping;
-                    videoTex.flipY = false;
+                    // Fix for artifacts:
+                    // 1. Revert flipY to true (standard for this model)
+                    // 2. Use ClampToEdgeWrapping to stop tiling
+                    // 3. Slightly zoom in (repeat < 1) to crop edge pixels causing streaks
+                    videoTex.wrapS = THREE.ClampToEdgeWrapping;
+                    videoTex.wrapT = THREE.ClampToEdgeWrapping;
+                    videoTex.repeat.set(0.98, 0.98);
+                    videoTex.offset.set(0.01, 0.01);
+                    videoTex.flipY = true;
 
                     mesh.material = new THREE.MeshBasicMaterial({
                         map: videoTex,
