@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cisza, która Myśli - FlowAssist TED Presentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap');
+
+        :root {
+            --bg-color: #050208;
+            --text-color: #ffffff;
+            --accent-cyan: #00ffff;
+            --accent-purple: #8b5cf6;
+            --font-main: 'Inter', sans-serif;
+            --transition-speed: 0.6s;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Slide Container */
+        .slides-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Individual Scene/Slide */
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed) ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            background: radial-gradient(circle at center, #1a0a2e 0%, #050208 70%);
+        }
+
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes blurIn {
+            from { opacity: 0; filter: blur(10px); }
+            to { opacity: 1; filter: blur(0); }
+        }
+
+        .slide.active h1, .slide.active h2 {
+            animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .slide.active p, .slide.active ul {
+            animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) 0.3s forwards;
+            opacity: 0; /* Start hidden */
+        }
+
+        .slide.active .visual {
+            animation: blurIn 1.5s ease-out forwards;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 5vw;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            max-width: 80%;
+        }
+
+        h2 {
+            font-size: 3.5vw;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--accent-cyan);
+        }
+
+        p {
+            font-size: 1.8vw;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            max-width: 60%;
+            color: #ccc;
+            font-weight: 300;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            font-size: 1.5vw;
+        }
+
+        li {
+            margin-bottom: 1rem;
+            color: #ddd;
+        }
+
+        /* Visual Anchors (CSS shapes/text) */
+        .visual {
+            font-size: 15vw;
+            margin-bottom: 2rem;
+            color: var(--accent-purple);
+            opacity: 0.8;
+            text-shadow: 0 0 50px rgba(139, 92, 246, 0.4);
+        }
+
+        .highlight {
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        .big-number {
+            font-size: 12vw;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            line-height: 1;
+        }
+        
+        /* Navigation */
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: var(--font-main);
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        .progress-dots {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dot.active {
+            background: var(--accent-cyan);
+            transform: scale(1.3);
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="slides-container">
+
+    <!-- Slide 1: Hook -->
+    <div class="slide active" id="slide-1">
+        <div class="visual">60%</div>
+        <h1>Tyle Twojej uwagi<br>pożera hałas.</h1>
+        <p>Nie hałas ulicy. Hałas setek pytań: "O której otwarte?" "Gdzie jest cennik?" "Czy mogę przesunąć wizytę?"</p>
+    </div>
+
+    <!-- Slide 2: Why it matters -->
+    <div class="slide" id="slide-2">
+        <h2>To nie są tylko telefony.</h2>
+        <div class="visual" style="font-size: 8vw;">To jest skradziony czas.</div>
+        <p>Gdy walczysz z chaosem komunikacji, przestajesz budować swój biznes. Zmieniasz się w recepcjonistę własnego marzenia.</p>
+    </div>
+
+    <!-- Slide 3: Current Dilemma -->
+    <div class="slide" id="slide-3">
+        <h2>Dylemat Współczesnego Managera</h2>
+        <ul style="text-align:left; display:inline-block;">
+            <li>❌ <strong>Zatrudnij Asystenta:</strong> Kosztowne, szkolenia, błędy.</li>
+            <li>❌ <strong>Odbieraj Sam:</strong> Wypalenie, brak czasu na strategię.</li>
+            <li>❌ <strong>Ignoruj Telefony:</strong> Utrata klientów i reputacji.</li>
+        </ul>
+        <p class="highlight">Gdzie jest złoty środek między człowiekiem a automatyczną sekretarką z lat 90?</p>
+    </div>
+
+    <!-- Slide 4: Turning Point -->
+    <div class="slide" id="slide-4">
+        <h1>Symfonia Poznawcza</h1>
+        <div class="visual">🧠</div>
+        <p>Zrozumiałem, że nie chodzi o "odebranie telefonu".<br>Chodzi o to, by technologia <strong>zrozumiała intencję</strong> i samodzielnie podjęła działanie w przestrzeni.</p>
+    </div>
+
+    <!-- Slide 5: Core Idea - Voice Layer -->
+    <div class="slide" id="slide-5">
+        <h2>Warstwa 1: Voice CallCenter</h2>
+        <div class="big-number">AI</div>
+        <p>Twój cyfrowy sobowtór. Odbiera 24/7. Nie choruje. Zna Twój kalendarz.<br>Rozmawia jak człowiek, ale pamięta jak superkomputer.</p>
+    </div>
+
+    <!-- Slide 6: Core Idea - Spatial Data -->
+    <div class="slide" id="slide-6">
+        <h2>Warstwa 2: Inteligentna Przestrzeń</h2>
+        <div class="visual" style="font-size: 5vw; border: 2px solid cyan; padding: 20px; border-radius: 10px;">DATA &harr; SPACE</div>
+        <p>Co się dzieje z danymi z rozmowy? One nie znikają.<br>One <strong>kształtują Twoją firmę</strong>. Automatyczny zapis w CRM. Powiadomienie SMS. Zmiana oświetlenia w sali konferencyjnej przed przyjściem klienta.</p>
+    </div>
+
+    <!-- Slide 7: Spectrum -->
+    <div class="slide" id="slide-7">
+        <h2>Wypośrodkowane Spektrum</h2>
+        <p style="font-size: 2.5vw;">Chaos &larr; <span class="highlight">FlowAssist</span> &rarr; Sterylność</p>
+        <p>Nie zastępujemy człowieka. Usuwamy robotyczną pracę, by człowiek mógł zająć się tym, co wymaga empatii i kreatywności.</p>
+    </div>
+
+    <!-- Slide 8: Real Case -->
+    <div class="slide" id="slide-8">
+        <h2>Historia Marka</h2>
+        <p>"W poniedziałki rano miałem 40 nieodebranych połączeń. Klienci byli wściekli."</p>
+        <p class="highlight">Wdrożenie FlowAssist: 0 nieodebranych. +30% rezerwacji.</p>
+        <p>Marek wrócił do projektowania wnętrz. AI zajęło się logistyką.</p>
+    </div>
+
+    <!-- Slide 9: Tech Vision -->
+    <div class="slide" id="slide-9">
+        <h1>Możliwości Poznawcze</h1>
+        <p>To nie jest "Chatbot". To system, który:<br>1. Słyszy.<br>2. Rozumie kontekst.<br>3. Działa w fizycznym świecie.</p>
+    </div>
+
+    <!-- Slide 10: Objection Handling -->
+    <div class="slide" id="slide-10">
+        <h2>"Ale AI brzmi sztucznie..."</h2>
+        <p>Już nie. Modele neuronowe V2 rozumieją wahanie w głosie, pauzy, emocje.</p>
+        <p>Klient czuje się zaopiekowany, nie "obsłużony przez skrypt". Cisza w słuchawce to szacunek, a nie błąd techniczny.</p>
+    </div>
+
+    <!-- Slide 11: Call to Action -->
+    <div class="slide" id="slide-11">
+        <h2>Start Control Space</h2>
+        <p>Przestań być niewolnikiem swojego telefonu.</p>
+        <ul>
+            <li>👉 <strong>Dziś:</strong> Zidentyfikuj, ile czasu tracisz na powtarzalne pytania.</li>
+            <li>👉 <strong>W tym tygodniu:</strong> Pozwól AI przejąć pierwszą linię frontu.</li>
+        </ul>
+    </div>
+
+    <!-- Slide 12: Ending -->
+    <div class="slide" id="slide-12">
+        <div class="visual">🌌</div>
+        <h1>Cisza, której potrzebujesz.<br>Odpowiedź, na którą zasługują.</h1>
+        <p style="margin-top: 3rem; font-size: 1.2vw; opacity: 0.6;">FlowAssist. Silence the Chaos.</p>
+    </div>
+
+</div>
+
+<div class="progress-dots">
+    <!-- Generated by JS -->
+</div>
+
+<div class="controls">
+    <button class="btn" onclick="prevSlide()">Poprzedni</button>
+    <button class="btn" onclick="nextSlide()">Następny</button>
+</div>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const dotsContainer = document.querySelector('.progress-dots');
+
+    // Init Dots
+    slides.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.classList.add('dot');
+        if (index === 0) dot.classList.add('active');
+        dot.addEventListener('click', () => goToSlide(index));
+        dotsContainer.appendChild(dot);
+    });
+
+    const dots = document.querySelectorAll('.dot');
+
+    function updateSlide() {
+        slides.forEach((slide, index) => {
+            slide.classList.remove('active');
+            dots[index].classList.remove('active');
+            if (index === currentSlide) {
+                slide.classList.add('active');
+                dots[index].classList.add('active');
+            }
+        });
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            updateSlide();
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updateSlide();
+        }
+    }
+
+    function goToSlide(index) {
+        currentSlide = index;
+        updateSlide();
+    }
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.code === 'Space') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // Touch support (simple swipe)
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    });
+    document.addEventListener('touchend', e => {
+        if (e.changedTouches[0].screenX < touchStartX - 50) nextSlide();
+        if (e.changedTouches[0].screenX > touchStartX + 50) prevSlide();
+    });
+
+</script>
+
+</body>
+</html>

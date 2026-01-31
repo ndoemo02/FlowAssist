@@ -281,7 +281,7 @@ function CameraSetup({ setupData, controlsRef }: { setupData: CamSetupData | nul
 }
 
 function IntroLogo() {
-    const tex = useTexture('/assets/textures/logo flowassist1.png');
+    const tex = useTexture('/assets/textures/logo_flowassist.png');
     const ref = useRef<THREE.Mesh>(null);
 
     useFrame((state) => {
