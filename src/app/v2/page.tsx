@@ -1,56 +1,59 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment, Stars, Center, Html, useProgress } from '@react-three/drei';
+import { OrbitControls, useGLTF, Environment, Stars, Html, useProgress, Stage } from '@react-three/drei';
 import { Suspense } from 'react';
 
 function Loader() {
     const { progress } = useProgress();
-    return <Html center className="text-white">{progress.toFixed(0)}% loaded</Html>;
+    return <Html center className="text-white bg-black/50 p-4 rounded-xl border border-white/10 backdrop-blur-sm shadow-2xl">
+        <div className="flex flex-col items-center gap-2">
+            <div className="text-2xl font-bold tracking-tighter text-cyan-400">{progress.toFixed(0)}%</div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-500">Decrypting City Data</div>
+        </div>
+    </Html>;
 }
 
 function CityModel() {
     const { scene } = useGLTF('/models/map_lviv_ukraine.glb');
-    return (
-        <Center>
-            <primitive object={scene} scale={[1, 1, 1]} />
-        </Center>
-    );
+    return <primitive object={scene} />;
 }
 
 export default function V2Page() {
     return (
-        <main className="w-full h-screen bg-black relative">
-            <div className="absolute top-6 left-6 z-10 text-white">
-                <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-                    3D City Preview (V2)
-                </h1>
-                <p className="text-gray-400 text-sm">Loaded: map_lviv_ukraine.glb</p>
-                <div className="mt-2 text-xs text-gray-500">
-                    <p>Controls: Left Click to Rotate, Right Click to Pan, Wheel to Zoom</p>
-                    <p className="text-red-400">Fix Applied: Scale x1, Clipping Planes Adjusted</p>
+        <main className="w-full h-screen bg-[#050505] relative overflow-hidden">
+            {/* Minimal HUD */}
+            <div className="absolute top-8 left-8 z-10 space-y-2 pointer-events-none">
+                <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                    <h1 className="text-xl font-bold text-white tracking-tight uppercase">Kyiv/Lviv Tactical View</h1>
+                </div>
+                <div className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-medium pl-5">
+                    Sector: UKR | Status: Simulation Active
                 </div>
             </div>
 
-            <Canvas camera={{ position: [0, 500, 1000], fov: 45, near: 0.1, far: 200000 }}>
+            <Canvas shadows={false} camera={{ position: [0, 0, 150], fov: 40, near: 0.1, far: 500000 }}>
                 <Suspense fallback={<Loader />}>
                     <color attach="background" args={['#050505']} />
 
-                    {/* Lighting setup for "Cosmic" look */}
-                    <ambientLight intensity={0.2} />
-                    <pointLight position={[10, 10, 10]} intensity={1} color="#00ffff" />
-                    <pointLight position={[-10, 5, -10]} intensity={0.5} color="#8b5cf6" />
+                    <Stage
+                        adjustCamera={1.2}
+                        intensity={0.5}
+                        environment="city"
+                        shadows={false}
+                        center
+                    >
+                        <CityModel />
+                    </Stage>
 
-                    {/* The City Model */}
-                    <CityModel />
-
-                    {/* Environment */}
-                    <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-                    <Environment preset="city" />
-
-                    <OrbitControls makeDefault />
+                    <Stars radius={300} depth={60} count={20000} factor={7} saturation={0} fade speed={1} />
+                    <OrbitControls makeDefault minDistance={0.1} maxDistance={10000} />
                 </Suspense>
             </Canvas>
+
+            {/* Scanline Effect */}
+            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_4px,3px_100%] opacity-20" />
         </main>
     );
 }
