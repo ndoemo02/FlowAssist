@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Mutab
 import * as THREE from 'three';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import TacticalMapWarsaw from './components/TacticalMapWarsaw';
 
 // --- CONFIG ---
 // Używamy skalibrowanych wartości z V5 (Mobile First)
@@ -386,6 +387,34 @@ export default function HomePage() {
                 </div>
             </section>
 
+            {/* 3.5 SECTION: TACTICAL MAP (WARSAW CASE) */}
+            <section className="relative z-10 bg-black py-24 px-6">
+                <div className="max-w-6xl mx-auto space-y-12">
+                    <div className="text-center space-y-4">
+                        <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tighter">Warsaw Intelligent Space</h2>
+                        <p className="text-gray-400 max-w-2xl mx-auto">
+                            Experience the future of AI orchestration. Multi-agent fleets reacting in real-time to voice commands across the Warsaw metropolitan area.
+                        </p>
+                    </div>
+
+                    <TacticalMapWarsaw />
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-12">
+                        {[
+                            { label: "Location", val: "Warsaw, PL" },
+                            { label: "Active Fleets", val: "12 units" },
+                            { label: "Validation", val: "Deterministic" },
+                            { label: "Response", val: "< 800ms" }
+                        ].map((stat, i) => (
+                            <div key={i} className="p-4 border-l border-white/10">
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest">{stat.label}</p>
+                                <p className="text-xl font-medium text-cyan-400">{stat.val}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* 4. SECTION: CTA */}
             <section className="relative z-10 py-32 bg-black text-center px-6">
                 <motion.div
@@ -485,8 +514,8 @@ function SwarmLogo() {
     `;
 
     return (
-        <points ref={points} position={[0, 0.5, 3.5]} scale={[4, 2, 1]} rotation={[0, 0, 0]}>
-            <planeGeometry args={[1, 1, 256, 128]} />
+        <points ref={points} position={[0, 0.4, 3.2]} scale={[4, 2, 1]} rotation={[0, 0, 0]}>
+            <planeGeometry args={[1, 1, 128, 64]} />
             <shaderMaterial
                 uniforms={uniforms}
                 vertexShader={vertexShader}

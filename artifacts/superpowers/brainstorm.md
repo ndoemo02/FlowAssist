@@ -1,23 +1,35 @@
 # Brainstorm: Creative Promotion of Voice Assistant & Intelligent Spaces
 
 ## 1. Project Overview
-- **Core Concept**: "Cognitive Symphony" - balancing automated voice handling (call center) with spatial data management.
-- **Spectrum**: From the "noise" of phone calls to the "intelligence" of data-driven spaces.
-- **Key Value**: Enhancing human cognitive capabilities through AI orchestration.
-- **Visual Style**: "Cosmic Dark/Neon" - Deep purples, cyans, 3D lighting, and glass textures.
+- **Core Concept**: "Cognitive Symphony" - Voice AI + Spatial Intelligence.
+- **Visual Style**: "Cosmic Dark/Neon" - Deep purples, cyans, 3D lighting, mapping.
+- **Current Target Location**: **Warsaw, Poland** (Strategic Change).
 
-## 2. Narrative Arc (TED Style)
-1. **The Burden of Noise**: We start with the mental load of managing a modern business (call center chaos).
-2. **The Invisible Assistant**: Introducing the Voice layer that filters chaos into structure.
-3. **The Thinking Space**: Moving from voice to space - how data flows through the walls of the company.
-4. **Cognitive Harmony**: The result is a business that "thinks" and "responds" without manual friction.
+## 2. The "Case": Voice-Controlled Spatial Intel (Warsaw Sector)
 
-## 3. High-Level Approach
-- **Narrative**: Use /superpowers-narrative to build a 10-12 slide deck in Polish.
-- **Structure**: Problem -> Solution -> Scale (Voice to Space) -> Future Vision.
-- **Visuals**: CSS/HTML based slides using the "Cosmic Dark" palette derived from FlowAssist V2.
+### A. Visual Style Guide
+- **Basemap**: Dark Matter / Midnight Blue.
+- **Neon Accents**: 
+    - Street networks: Cyan/Purple glow.
+    - Important buildings (e.g., Palace of Culture): High emission cyan.
+- **Units**: Fleet icons (Alfa, Bravo) as neon glowing markers.
 
-## 4. Architectural Option
-- **Option A (Story-Driven)**: Focus on a "Day in the Life" of a business owner.
-- **Option B (Tech-Driven)**: Focus on the "Thinking Architecture" from Voice AI to Spatial Data.
-- **Option C (Synthesis)**: Selected approach - balancing the practical (voice calls) with the futuristic (spatial intel).
+### B. Map Implementation (Warsaw)
+- **Coordinates**: `52.2297° N, 21.0122° E` (Warsaw Center).
+- **Sectors**: Defined grid over Warsaw (e.g., Sector W-1: Śródmieście, Sector W-2: Wola).
+
+### C. Voice Integration (Warsaw Specific)
+- "Alfa Team, relocate to Palace of Culture."
+- "Show me live traffic in Wola District."
+- "Scan Sector W-1 for intent anomalies."
+
+## 3. Revised Implementation Plan (2026-01-31)
+
+1. **Warsaw Map Component**: Create `WarsawTacticalMap.tsx` with high-performance rendering (WebGL/Mapbox).
+2. **Neon Overlay**: Layer a custom SVG or Canvas overlay for the "Neon Street" effect.
+3. **Validation HUD**: Add the HUD specifically for Warsaw sector data.
+
+## 4. Current Status
+- Location switched to Warsaw.
+- 3D performance optimized (SwarmLogo density reduced).
+- Ready to implement the tactical map.
