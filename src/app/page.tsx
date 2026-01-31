@@ -51,11 +51,17 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                 if (isScreenName) {
                     child.visible = true;
                     const mesh = child as THREE.Mesh;
+
+                    // Fix for artifacts
+                    videoTex.wrapS = THREE.RepeatWrapping;
+                    videoTex.wrapT = THREE.RepeatWrapping;
+                    videoTex.flipY = false;
+
                     mesh.material = new THREE.MeshBasicMaterial({
                         map: videoTex,
-                        toneMapped: false
+                        toneMapped: false,
+                        side: THREE.DoubleSide
                     });
-                    videoTex.flipY = true;
 
                     // Logika Kamery
                     if (name.includes('object003')) {
