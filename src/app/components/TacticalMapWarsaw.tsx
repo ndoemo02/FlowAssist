@@ -12,24 +12,26 @@ export default function TacticalMapWarsaw() {
 
     return (
         <div className="relative w-full h-[600px] bg-[#050505] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-            {/* Background Map Simulation (Warsaw - OSM Inverted 'Dark Mode') */}
-            <div className="absolute inset-0 opacity-50 bg-[#050505] overflow-hidden">
-                {/* 3x3 Grid of OSM Tiles centered approx on Warsaw Palace of Culture */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1536px] h-[1536px] grid grid-cols-3 grid-rows-3 opacity-60">
-                    {/* Row 1 (y=2719) */}
-                    <img src="https://tile.openstreetmap.org/13/4572/2719.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
-                    <img src="https://tile.openstreetmap.org/13/4573/2719.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
-                    <img src="https://tile.openstreetmap.org/13/4574/2719.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
+            {/* Background Map Simulation (Warsaw Center - OSM Z16 for detail) */}
+            <div className="absolute inset-0 opacity-80 bg-[#050505] overflow-hidden">
+                {/* 3x3 Grid of OSM Tiles centered exactly on Warsaw Palace of Culture (Z15: x=18287, y=10896) */}
+                {/* Using Z15 for better context scale */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1536px] h-[1536px] grid grid-cols-3 grid-rows-3">
 
-                    {/* Row 2 (y=2720) - Center */}
-                    <img src="https://tile.openstreetmap.org/13/4572/2720.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
-                    <img src="https://tile.openstreetmap.org/13/4573/2720.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
-                    <img src="https://tile.openstreetmap.org/13/4574/2720.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
+                    {/* Row 1 (y=21532) */}
+                    <img src="https://tile.openstreetmap.org/16/36575/21532.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+                    <img src="https://tile.openstreetmap.org/16/36576/21532.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+                    <img src="https://tile.openstreetmap.org/16/36577/21532.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
 
-                    {/* Row 3 (y=2721) */}
-                    <img src="https://tile.openstreetmap.org/13/4572/2721.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
-                    <img src="https://tile.openstreetmap.org/13/4573/2721.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
-                    <img src="https://tile.openstreetmap.org/13/4574/2721.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-75 contrast-125 saturate-50" alt="" />
+                    {/* Row 2 (y=21533) - Center */}
+                    <img src="https://tile.openstreetmap.org/16/36575/21533.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+                    <img src="https://tile.openstreetmap.org/16/36576/21533.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+                    <img src="https://tile.openstreetmap.org/16/36577/21533.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+
+                    {/* Row 3 (y=21534) */}
+                    <img src="https://tile.openstreetmap.org/16/36575/21534.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+                    <img src="https://tile.openstreetmap.org/16/36576/21534.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
+                    <img src="https://tile.openstreetmap.org/16/36577/21534.png" className="w-[512px] h-[512px] invert hue-rotate-180 brightness-100 contrast-125 saturate-50" alt="" />
                 </div>
 
                 {/* Vignette & Scanlines */}
