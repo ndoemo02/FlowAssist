@@ -56,10 +56,13 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                     // 1. Revert flipY to true (standard for this model)
                     // 2. Use ClampToEdgeWrapping to stop tiling
                     // 3. Slightly zoom in (repeat < 1) to crop edge pixels causing streaks
+                    // 4. Use LinearFilter to smooth edges
                     videoTex.wrapS = THREE.ClampToEdgeWrapping;
                     videoTex.wrapT = THREE.ClampToEdgeWrapping;
-                    videoTex.repeat.set(0.98, 0.98);
-                    videoTex.offset.set(0.01, 0.01);
+                    videoTex.minFilter = THREE.LinearFilter;
+                    videoTex.magFilter = THREE.LinearFilter;
+                    videoTex.repeat.set(0.95, 0.95); // More aggressive crop to be safe
+                    videoTex.offset.set(0.025, 0.025);
                     videoTex.flipY = true;
 
                     mesh.material = new THREE.MeshBasicMaterial({
@@ -277,6 +280,34 @@ function CameraSetup({ setupData, controlsRef }: { setupData: CamSetupData | nul
     return null;
 }
 
+function IntroLogo() {
+    const tex = useTexture('/assets/textures/logo flowassist1.png');
+    const ref = useRef<THREE.Mesh>(null);
+
+    useFrame((state) => {
+        if (ref.current) {
+            // Floating animation
+            ref.current.position.y = 1.2 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+            // Billboard effect (always face camera)
+            ref.current.lookAt(state.camera.position);
+        }
+    });
+
+    return (
+        <mesh ref={ref} position={[0, 1.2, 0]} scale={[2, 2, 1]}>
+            <planeGeometry />
+            <meshStandardMaterial
+                map={tex}
+                transparent
+                opacity={1}
+                side={THREE.DoubleSide}
+                depthWrite={false}
+                toneMapped={false}
+            />
+        </mesh>
+    );
+}
+
 // --- LANDING PAGE KOMPONENT ---
 export default function HomePage() {
     const [camSetup, setCamSetup] = useState<CamSetupData | null>(null);
@@ -303,7 +334,7 @@ export default function HomePage() {
                         <LightingReveal />
                         <Suspense fallback={null}>
                             <StudioModel onCamSetup={setCamSetup} />
-                            <TreeLogoModel />
+                            <IntroLogo />
                             <Environment preset="night" blur={0.8} background={false} />
                         </Suspense>
                         <CameraSetup setupData={camSetup} controlsRef={controlsRef} />
