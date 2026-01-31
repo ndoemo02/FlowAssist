@@ -12,18 +12,27 @@ export default function TacticalMapWarsaw() {
 
     return (
         <div className="relative w-full h-[600px] bg-[#050505] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-            {/* Background Map Simulation (Warsaw) */}
-            <div className="absolute inset-0 opacity-80 bg-[#050505]">
-                <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{
-                        backgroundImage: `url('https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/21.0122,52.2297,11,0/1200x600?access_token=pk.eyJ1IjoiYW50aWdyYXZpdHktYWkiLCJhIjoiY202bm41OW9vMDJlajJqcXBrYzR6ZGN6dSJ9')`,
-                        backgroundSize: 'cover',
-                        filter: 'brightness(0.7) contrast(1.2)'
-                    }}
-                />
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.15)_1px,transparent_1px)] bg-[size:60px_60px]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
+            {/* Background Map Simulation (Warsaw - CartoDB Dark Matter Tiles Z13) */}
+            <div className="absolute inset-0 opacity-100 bg-[#111] overflow-hidden">
+                {/* Tile Grid Center: X=4573, Y=2720 (Warsaw Palace of Culture) */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1024px] h-[512px] grid grid-cols-4 grid-rows-2">
+                    {/* Row 1 (Y=2719) */}
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4572/2719.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4573/2719.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4574/2719.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4575/2719.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+
+                    {/* Row 2 (Y=2720) - Center Row */}
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4572/2720.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4573/2720.png" alt="" className="w-full h-full object-cover grayscale brightness-125" /> {/* CENTER TILE */}
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4574/2720.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+                    <img src="https://a.basemaps.cartocdn.com/dark_all/13/4575/2720.png" alt="" className="w-full h-full object-cover grayscale brightness-125" />
+                </div>
+
+                {/* Effects Layers */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-[#050505]" />
             </div>
 
             {/* Neon Grid Overlay */}
