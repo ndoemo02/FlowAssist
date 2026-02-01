@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Map, { Source, Layer } from 'react-map-gl/maplibre';
+import Map, { Source, Layer } from 'react-map-gl';
 import maplibreGl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -93,6 +93,7 @@ export default function TacticalMapVector() {
             <Map
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
+                mapLib={maplibreGl}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle={mapStyle as any}
                 maxPitch={85}
