@@ -6,7 +6,8 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Mutab
 import * as THREE from 'three';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import TacticalMapWarsaw from './components/TacticalMapWarsaw';
+// SWITCH TO VECTOR MAP (Yellow/Golden Theme)
+import TacticalMapVector from './components/TacticalMapVector';
 
 // --- CONFIG ---
 // Używamy skalibrowanych wartości z V5 (Mobile First)
@@ -26,7 +27,7 @@ type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
 
 function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
-    const videoTex = useVideoTexture('/assets/video/drzewo_video.mp4');
+    const videoTex = useVideoTexture('/assets/TV/3.mp4');
 
     useEffect(() => {
         scene.traverse((child) => {
@@ -82,8 +83,12 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                         const dir = new THREE.Vector3();
                         child.getWorldDirection(dir);
 
-                        const dist = CONFIG.camOffsetDist;
-                        const shiftLeft = CONFIG.camOffsetLeft;
+                        // HARDCODED MOBILE FIX
+                        // Check if we are on mobile to zoom out
+                        const isMobile = window.innerWidth < 768;
+                        const dist = isMobile ? 8.5 : CONFIG.camOffsetDist; // 6.5 -> 8.5 for Mobile (Zooms out more)
+                        const shiftLeft = isMobile ? 1.5 : CONFIG.camOffsetLeft; // 2.5 -> 1.5 for Mobile (Centers better)
+
                         const camPos = target.clone().add(dir.clone().multiplyScalar(dist));
 
                         const up = new THREE.Vector3(0, 1, 0);
@@ -176,7 +181,40 @@ function TreeLogoModel() {
 }
 
 
-function StarField({ count = 8000 }) {
+// REPLACED STARFIELD WITH GLTF MODEL AS REQUESTED
+function StarField() {
+    const { scene } = useGLTF('/models/Flowassist3d/scene.gltf');
+    const galaxy = useMemo(() => scene.clone(), [scene]); // Clone for safety
+
+    useFrame((state) => {
+        const t = state.clock.getElapsedTime();
+
+        // 1. Rotation: STOPPED (User Request)
+        // galaxy.rotation.y = t * 0.05; 
+        galaxy.rotation.y = 0;
+
+        // 2. Expansion (Intro): "Osadz oblok przed kamera i rozszerz"
+        // Move closer to center [0, -2, 0] so it starts right in the view
+        // Scale 0.1 (dense dot) -> 80 (huge surrounding void)
+        const targetScale = 80;
+        const progress = Math.min(t * 0.2, 1.0); // 5s duration
+        const ease = 1 - Math.pow(1 - progress, 3); // Cubic Ease Out
+
+        const currentScale = 0.5 + (targetScale - 0.5) * ease;
+        galaxy.scale.set(currentScale, currentScale, currentScale);
+    });
+
+    return (
+        <primitive
+            object={galaxy}
+            position={[0, -2, 0]} // Higher up to be in camera line of sight
+        />
+    );
+}
+
+/*
+// --- OLD PROCEDURAL STARFIELD (BACKUP) ---
+function StarFieldBackup({ count = 8000 }) {
     const points = useRef<THREE.Points>(null);
     const positions = useMemo(() => {
         const pos = new Float32Array(count * 3);
@@ -190,22 +228,16 @@ function StarField({ count = 8000 }) {
         }
         return pos;
     }, [count]);
-
-    useFrame((state) => {
-        if (points.current) {
-            // points.current.rotation.y = state.clock.getElapsedTime() * 0.01;
-        }
-    });
-
     return (
-        <points ref={points}>
+         <points ref={points}>
             <bufferGeometry>
                 <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
             </bufferGeometry>
             <pointsMaterial size={0.03} color="#ffffff" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
         </points>
     );
-}
+} 
+*/
 
 function CosmicSnow({ count = 300 }) {
     const mesh = useRef<THREE.Group>(null);
@@ -286,7 +318,7 @@ export default function HomePage() {
     const [camSetup, setCamSetup] = useState<CamSetupData | null>(null);
     const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
-    // Zapobiegamy kolizji z iframe reklamowymi jeśli by się pojawiały (z V5 kodu)
+    // Zapobiegamy kolizji z iframe reklamowymi
     useEffect(() => {
         const style = document.createElement('style');
         style.innerHTML = `body > iframe[style*="z-index: 2147483647"] { display: none !important; } nextjs-portal { display: none !important; }`;
@@ -302,12 +334,12 @@ export default function HomePage() {
                 <div className="absolute inset-0 z-0">
                     <Canvas shadows camera={{ position: CONFIG.camPosition, fov: 60 }}>
                         <color attach="background" args={['#050208']} />
-                        <StarField count={4000} />
+                        <StarField />
                         <CosmicSnow count={150} />
                         <LightingReveal />
                         <Suspense fallback={null}>
                             <StudioModel onCamSetup={setCamSetup} />
-                            <SwarmLogo />
+                            {/* SwarmLogo REMOVED */}
                             <Environment preset="night" blur={0.8} background={false} />
                         </Suspense>
                         <CameraSetup setupData={camSetup} controlsRef={controlsRef} />
@@ -320,11 +352,6 @@ export default function HomePage() {
                             maxPolarAngle={Math.PI / 1.8}
                         />
                     </Canvas>
-                </div>
-
-                {/* OVERLAY INTRO TEXT REMOVED (Replaced by 3D SwarmLogo) */}
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none p-6">
-                    {/* Placeholder for layout spacing if needed, but text is now in 3D */}
                 </div>
 
                 <div className="absolute bottom-10 left-0 right-0 z-10 flex justify-center animate-bounce pointer-events-none">
@@ -369,7 +396,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* 3. SECTION: THE PROMISE (Using the Avatar Persona) */}
+            {/* 3. SECTION: THE PROMISE */}
             <section className="relative z-10 bg-[#0a0a0a] py-24 px-6 border-t border-white/5">
                 <div className="max-w-3xl mx-auto flex flex-col md:flex-row items-center gap-12">
                     <div className="flex-1 space-y-6">
@@ -379,16 +406,13 @@ export default function HomePage() {
                         <p className="text-lg text-gray-300 leading-relaxed">
                             &quot;I am here to handle the chaos so you can focus on the craft. I don&apos;t just answer phones. I create order.&quot;
                         </p>
-                        <p className="text-sm text-gray-500">
-                            FlowAssist filters the noise, secures bookings, and politely explains availability. No marketing scripts. Just clear communication.
-                        </p>
                     </div>
                     <div className="relative w-full max-w-xs aspect-square rounded-full bg-gradient-to-tr from-cyan-900/40 to-purple-900/40 blur-3xl" />
                 </div>
             </section>
 
             {/* 3.5 SECTION: TACTICAL MAP (WARSAW CASE) */}
-            <section className="relative z-10 bg-black py-24 px-6">
+            <section className="relative z-10 bg-black py-24 px-6 border-y border-white/5">
                 <div className="max-w-6xl mx-auto space-y-12">
                     <div className="text-center space-y-4">
                         <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tighter">Warsaw Intelligent Space</h2>
@@ -397,7 +421,10 @@ export default function HomePage() {
                         </p>
                     </div>
 
-                    <TacticalMapWarsaw />
+                    {/* Integrated Warsaw Map */}
+                    <div className="w-full h-[600px] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+                        <TacticalMapVector />
+                    </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-12">
                         {[
@@ -426,12 +453,10 @@ export default function HomePage() {
                 >
                     <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">Start Control Space</h2>
                     <p className="text-gray-400 mb-10">Stop losing clients to silence.</p>
-
                     <a href="#" className="inline-block px-10 py-4 bg-white text-black font-bold rounded-full hover:bg-purple-50 transition-colors transform hover:scale-105 duration-200">
                         Get FlowAssist
                     </a>
                 </motion.div>
-
                 <footer className="mt-32 text-center text-gray-700 text-sm">
                     <p>FlowAssist &copy; {new Date().getFullYear()}. Smart Business.</p>
                 </footer>

@@ -34,6 +34,14 @@ export const Navbar = () => {
                 {/* Desktop Menu */}
                 <div className="hidden md:flex gap-8 text-sm font-medium text-white/70 items-center">
                     <a href="/presentation.html" target="_blank" className="hover:text-white transition-colors">Technologia</a>
+
+                    {/* NEW: Explicit link to Warsaw Map */}
+                    <button onClick={() => {
+                        window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+                    }} className="hover:text-cyan-400 transition-colors text-white font-bold">
+                        Mapy Warszawy
+                    </button>
+
                     <button onClick={handleMapClick} className={`hover:text-white transition-colors ${currentView === 'MAP' ? 'text-white' : ''}`}>Mapa 3D</button>
                     <a href="https://flow-assist.vercel.app/dev/v3/index.html" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-emerald-400">🌍 Cesium Maps</a>
                     <a href="/dev/v5" className="hover:text-white transition-colors">Kontakt</a>
