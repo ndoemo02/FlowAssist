@@ -66,10 +66,10 @@ export default function TacticalMapVector() {
                 source: 'maptiler-vector',
                 'source-layer': 'building',
                 paint: {
-                    'fill-extrusion-color': NEON_GOLD,
-                    'fill-extrusion-height': ['get', 'render_height'],
-                    'fill-extrusion-base': ['get', 'render_min_height'],
-                    'fill-extrusion-opacity': 0.7,
+                    'fill-extrusion-color': "#1e293b",
+                    'fill-extrusion-height': ["coalesce", ["get", "render_height"], 0],
+                    'fill-extrusion-base': ["coalesce", ["get", "render_min_height"], 0],
+                    'fill-extrusion-opacity': 0.9,
                     'fill-extrusion-vertical-gradient': true
                 }
             },
@@ -93,7 +93,7 @@ export default function TacticalMapVector() {
             <Map
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
-                mapLib={maplibreGl}
+                mapLib={maplibreGl as any}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle={mapStyle as any}
                 maxPitch={85}
