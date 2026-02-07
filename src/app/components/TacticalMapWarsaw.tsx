@@ -18,38 +18,19 @@ export default function TacticalMapWarsaw() {
     };
 
     return (
-        <div className="relative w-full h-[700px] bg-[#02040a] rounded-[2rem] overflow-hidden border border-cyan-500/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] group">
+        <div className="relative w-full h-full bg-[#02040a] overflow-hidden group">
 
-            {/* 1. MAP LAYER (3D Perspective simulation) */}
-            <div className="absolute inset-0 opacity-60 transition-transform duration-1000 group-hover:scale-105"
-                style={{ perspective: '1000px' }}>
-                <div className="absolute inset-0 origin-center"
-                    style={{ transform: 'rotateX(20deg) scale(1.2)' }}>
-
-                    {/* 3x3 Grid of OSM Tiles (Warsaw) with "Blueprint" filters */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1536px] h-[1536px] grid grid-cols-3 grid-rows-3 opacity-80">
-                        {/* Row 1 */}
-                        <img src="https://tile.openstreetmap.org/16/36575/21532.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        <img src="https://tile.openstreetmap.org/16/36576/21532.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        <img src="https://tile.openstreetmap.org/16/36577/21532.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        {/* Row 2 */}
-                        <img src="https://tile.openstreetmap.org/16/36575/21533.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        <img src="https://tile.openstreetmap.org/16/36576/21533.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        <img src="https://tile.openstreetmap.org/16/36577/21533.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        {/* Row 3 */}
-                        <img src="https://tile.openstreetmap.org/16/36575/21534.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        <img src="https://tile.openstreetmap.org/16/36576/21534.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                        <img src="https://tile.openstreetmap.org/16/36577/21534.png" className="w-[512px] h-[512px] invert hue-rotate-[190deg] brightness-[0.7] contrast-[1.4] saturate-[0.3]" alt="" />
-                    </div>
-
-                    {/* Cyber Grid Overlay */}
-                    <div className="absolute inset-0 opacity-30"
-                        style={{ backgroundImage: 'linear-gradient(to right, #22d3ee 1px, transparent 1px), linear-gradient(to bottom, #22d3ee 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
-                </div>
+            {/* 1. MAP LAYER (3D Cesium Digital Twin) */}
+            <div className="absolute inset-0 z-0">
+                <iframe
+                    src="/tactical_warsaw.html"
+                    className="w-full h-full border-none opacity-80"
+                    title="Warsaw Tactical 3D"
+                />
             </div>
 
             {/* 2. ATMOSPHERE OVERLAYS */}
-            <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 pointer-events-none z-10">
                 {/* Vignette */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(2,4,10,0.8)_100%)]" />
                 {/* Top/Bottom Gradient */}
@@ -69,28 +50,28 @@ export default function TacticalMapWarsaw() {
                         <div className="flex items-center gap-3">
                             <div className="h-px w-8 bg-cyan-500/50" />
                             <h1 className="text-3xl font-black text-white tracking-tighter uppercase italic">
-                                Warsaw <span className="text-cyan-400">Tactical</span>
+                                Warszawa <span className="text-cyan-400">Taktyczna</span>
                             </h1>
                         </div>
                         <p className="text-[10px] text-cyan-400/60 uppercase tracking-[0.4em] font-mono mt-1">
-                            System Version 3.0.4 | Protocol: active
+                            Wersja Systemu 3.0.4 | Protokół: aktywny
                         </p>
                     </div>
                 </div>
 
                 <div className="bg-black/60 border-l-4 border-cyan-500 p-5 backdrop-blur-xl rounded-r-xl shadow-2xl max-w-sm">
                     <div className="flex justify-between items-center mb-3">
-                        <span className="text-[9px] text-cyan-400 uppercase tracking-widest font-black">Environmental Data</span>
+                        <span className="text-[9px] text-cyan-400 uppercase tracking-widest font-black">Dane Środowiskowe</span>
                         <span className="text-[9px] text-gray-500 font-mono">52.2297N / 21.0122E</span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-[11px] font-mono">
                         <div className="text-gray-400">
-                            AGENT_STATUS: <span className="text-cyan-400">STABLE</span><br />
-                            ICM_VALIDATION: <span className="text-cyan-400">TRUE</span>
+                            STATUS_AGENTA: <span className="text-cyan-400">STABILNY</span><br />
+                            WALIDACJA_ICM: <span className="text-cyan-400">POZYTYWNA</span>
                         </div>
                         <div className="text-gray-400">
-                            VOICE_PROXY: <span className="text-purple-400">PENDING</span><br />
-                            LATENCY: <span className="text-cyan-400">12ms</span>
+                            VOICE_PROXY: <span className="text-purple-400">OCZEKIWANIE</span><br />
+                            OPÓŹNIENIE: <span className="text-cyan-400">12ms</span>
                         </div>
                     </div>
                 </div>
@@ -132,15 +113,15 @@ export default function TacticalMapWarsaw() {
             <div className="absolute bottom-10 left-10 right-10 z-50 flex justify-between items-end pointer-events-none">
                 <div className="flex gap-10 items-center bg-black/40 p-4 rounded-2xl backdrop-blur-lg border border-white/5">
                     <div className="space-y-1">
-                        <div className="text-[8px] text-gray-500 uppercase tracking-widest font-black">Satellite Link</div>
+                        <div className="text-[8px] text-gray-500 uppercase tracking-widest font-black">Łącze Satelitarne</div>
                         <div className="flex gap-1">
                             {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="w-1.5 h-3 bg-cyan-500/30 rounded-sm" />)}
-                            <div className="text-[10px] text-cyan-400 ml-2 font-mono">UPDATING...</div>
+                            <div className="text-[10px] text-cyan-400 ml-2 font-mono">AKTUALIZACJA...</div>
                         </div>
                     </div>
                     <div className="h-8 w-px bg-white/10" />
                     <div className="space-y-1">
-                        <div className="text-[8px] text-gray-500 uppercase tracking-widest font-black">System Load</div>
+                        <div className="text-[8px] text-gray-500 uppercase tracking-widest font-black">Obciążenie Systemu</div>
                         <div className="text-[11px] text-white font-mono">CPU: 14% | MEM: 2.1GB</div>
                     </div>
                 </div>
@@ -149,7 +130,7 @@ export default function TacticalMapWarsaw() {
                     <button className="group relative px-10 py-4 overflow-hidden rounded-full bg-cyan-500/10 border border-cyan-500/50 shadow-[0_0_30px_rgba(34,211,238,0.1)] hover:border-cyan-400 transition-all">
                         <div className="absolute inset-0 bg-cyan-500/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                         <span className="relative text-cyan-400 text-[10px] font-black uppercase tracking-[0.3em]">
-                            Initialize Voice Control
+                            Inicjuj Sterowanie Głosem
                         </span>
                     </button>
                 </div>

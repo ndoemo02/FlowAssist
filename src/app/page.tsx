@@ -14,7 +14,7 @@ import TacticalMapVector from './components/TacticalMapVector';
 const CONFIG = {
     rotY: 1.64,
     hideShell: true,
-    scale: 0.6,
+    scale: 0.5,
     camOffsetLeft: 3.5,
     camOffsetDist: 3.0,
     camPosition: [0, 0.5, 5.0] as [number, number, number]
@@ -28,6 +28,7 @@ type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
 function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
     const videoTex = useVideoTexture('/assets/TV/3.mp4');
+
 
     useEffect(() => {
         scene.traverse((child) => {
@@ -55,15 +56,11 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                     const mesh = child as THREE.Mesh;
 
                     // Fix for artifacts:
-                    // 1. Revert flipY to true (standard for this model)
-                    // 2. Use ClampToEdgeWrapping to stop tiling
-                    // 3. Slightly zoom in (repeat < 1) to crop edge pixels causing streaks
-                    // 4. Use LinearFilter to smooth edges
                     videoTex.wrapS = THREE.ClampToEdgeWrapping;
                     videoTex.wrapT = THREE.ClampToEdgeWrapping;
                     videoTex.minFilter = THREE.LinearFilter;
                     videoTex.magFilter = THREE.LinearFilter;
-                    videoTex.repeat.set(0.95, 0.95); // More aggressive crop to be safe
+                    videoTex.repeat.set(0.95, 0.95);
                     videoTex.offset.set(0.025, 0.025);
                     videoTex.flipY = true;
 
@@ -83,13 +80,14 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                         const dir = new THREE.Vector3();
                         child.getWorldDirection(dir);
 
-                        // HARDCODED MOBILE FIX
-                        // Check if we are on mobile to zoom out
                         const isMobile = window.innerWidth < 768;
-                        const dist = isMobile ? 8.5 : CONFIG.camOffsetDist; // 6.5 -> 8.5 for Mobile (Zooms out more)
-                        const shiftLeft = isMobile ? 1.5 : CONFIG.camOffsetLeft; // 2.5 -> 1.5 for Mobile (Centers better)
+                        // Final Calibration: Dist 5.5, Shift 3.6, Y 1.0
+                        const dist = isMobile ? 5.5 : CONFIG.camOffsetDist;
+                        const shiftLeft = isMobile ? 3.6 : CONFIG.camOffsetLeft;
 
+                        // Add Y offset
                         const camPos = target.clone().add(dir.clone().multiplyScalar(dist));
+                        camPos.y += isMobile ? 1.0 : 0;
 
                         const up = new THREE.Vector3(0, 1, 0);
                         const right = new THREE.Vector3().crossVectors(up, dir).normalize();
@@ -134,6 +132,8 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                         }
                     }
                 }
+            } else if ((child as THREE.Light).isLight) {
+                child.castShadow = true;
             }
         });
     }, [scene, onCamSetup, videoTex]);
@@ -212,14 +212,13 @@ function StarField() {
     );
 }
 
-/*
-// --- OLD PROCEDURAL STARFIELD (BACKUP) ---
-function StarFieldBackup({ count = 8000 }) {
+// --- RESTORED PROCEDURAL STARFIELD (SWARM) ---
+function StarSwarm({ count = 3000 }) {
     const points = useRef<THREE.Points>(null);
     const positions = useMemo(() => {
         const pos = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-            const radius = 30 + Math.random() * 80;
+            const radius = 20 + Math.random() * 60; // Swarm around the center
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
             pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
@@ -228,16 +227,24 @@ function StarFieldBackup({ count = 8000 }) {
         }
         return pos;
     }, [count]);
+
+    useFrame((state) => {
+        if (points.current) {
+            // Slow rotation for "swarm" effect
+            points.current.rotation.y = state.clock.getElapsedTime() * 0.02;
+            points.current.rotation.z = state.clock.getElapsedTime() * 0.01;
+        }
+    });
+
     return (
-         <points ref={points}>
+        <points ref={points}>
             <bufferGeometry>
                 <bufferAttribute attach="attributes-position" array={positions} count={count} itemSize={3} />
             </bufferGeometry>
-            <pointsMaterial size={0.03} color="#ffffff" transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
+            <pointsMaterial size={0.05} color="#ffffff" transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} />
         </points>
     );
-} 
-*/
+}
 
 function CosmicSnow({ count = 300 }) {
     const mesh = useRef<THREE.Group>(null);
@@ -299,16 +306,14 @@ function LightingReveal() {
 
 function CameraSetup({ setupData, controlsRef }: { setupData: CamSetupData | null; controlsRef: MutableRefObject<OrbitControlsImpl | null> }) {
     const { camera } = useThree();
-    const [initialized, setInitialized] = useState(false);
 
     useEffect(() => {
-        if (!setupData || !controlsRef.current || initialized) return;
+        if (!setupData || !controlsRef.current) return;
         camera.position.copy(setupData.position);
         controlsRef.current.target.copy(setupData.target);
         camera.updateProjectionMatrix();
         controlsRef.current.update();
-        setInitialized(true);
-    }, [camera, setupData, controlsRef, initialized]);
+    }, [camera, setupData, controlsRef]);
 
     return null;
 }
@@ -334,7 +339,10 @@ export default function HomePage() {
                 <div className="absolute inset-0 z-0">
                     <Canvas shadows camera={{ position: CONFIG.camPosition, fov: 60 }}>
                         <color attach="background" args={['#050208']} />
-                        <StarField />
+                        <Suspense fallback={null}>
+                            {/* <StarField /> Replaced with Swarm */}
+                            <StarSwarm />
+                        </Suspense>
                         <CosmicSnow count={150} />
                         <LightingReveal />
                         <Suspense fallback={null}>
@@ -357,6 +365,9 @@ export default function HomePage() {
                 <div className="absolute bottom-10 left-0 right-0 z-10 flex justify-center animate-bounce pointer-events-none">
                     <span className="text-xs tracking-widest text-white/30 uppercase">Scroll to Explore</span>
                 </div>
+
+                {/* BOARDER OVERLAY */}
+                <div className="pointer-events-none absolute inset-0 z-50 border-[20px] border-[#000000] rounded-[30px] md:border-[0px]" />
             </section>
 
             {/* 2. SECTION: VALUE PROP */}
