@@ -588,7 +588,7 @@ function LightingReveal() {
 // --- AVATAR COMPONENT ---
 function Avatar() {
     // Force autoplay settings
-    const videoTex = useVideoTexture('/assets/video/ambi.mp4', {
+    const videoTex = useVideoTexture('/images/avatar_gs.mp4', {
         start: true,
         muted: true,
         playsInline: true
