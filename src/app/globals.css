@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lexend:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,7 +16,7 @@
     h4,
     h5,
     h6 {
-        font-family: 'Outfit', system-ui, sans-serif;
+        font-family: 'Lexend', 'Outfit', system-ui, sans-serif;
     }
 }
 
@@ -29,5 +31,33 @@
 
     .text-glow {
         text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Carbon-Pearl Utilities */
+    .glass-panel-carbon {
+        @apply bg-black/60 backdrop-blur-xl border border-white/5 rounded-xl;
+        box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-display {
+        @apply font-mono tracking-tight;
+        letter-spacing: -0.02em;
+    }
+
+    .pearl-glow {
+        box-shadow: 
+            0 0 20px rgba(255, 255, 255, 0.3),
+            0 0 40px rgba(255, 255, 255, 0.1);
+    }
+
+    .carbon-border {
+        border-image: linear-gradient(
+            135deg, 
+            rgba(255, 255, 255, 0.1) 0%, 
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0.02) 100%
+        ) 1;
     }
 }

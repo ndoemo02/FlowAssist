@@ -19,6 +19,7 @@
         "gapitoken": "^0.1.5",
         "googleapis": "^170.1.0",
         "gsap": "^3.14.2",
+        "leva": "^0.10.1",
         "lucide-react": "^0.300.0",
         "maplibre-gl": "^4.7.1",
         "next": "14.2.0",
