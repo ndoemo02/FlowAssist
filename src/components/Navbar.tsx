@@ -52,14 +52,27 @@ export const Navbar = () => {
                             <div className="absolute right-0 top-full pt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
                                 <div className="bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl overflow-hidden p-1">
                                     <div className="px-4 py-2 text-xs text-white/40 uppercase font-bold tracking-wider">Admin Tools</div>
-                                    <Link href="/dev/" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
-                                        <Monitor size={16} /> <span>V1: Studio</span>
+                                    <Link href="/dev/index.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <Monitor size={16} /> <span>V1: Studio (index.html)</span>
                                     </Link>
-                                    <Link href="/dev/v2/" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
-                                        <Box size={16} /> <span>V2: Living Room</span>
+                                    <Link href="/dev/v2/index.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <Box size={16} /> <span>V2: Living Room (index.html)</span>
                                     </Link>
-                                    <Link href="/dev/v3/" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
-                                        <ImageIcon size={16} /> <span>V3: HDRI Preview</span>
+                                    <Link href="/dev/v3/index.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <ImageIcon size={16} /> <span>V3: HDRI (index.html)</span>
+                                    </Link>
+                                    <Link href="/dev/v4/index.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <Box size={16} /> <span>V4: Prototype (index.html)</span>
+                                    </Link>
+                                    <Link href="/dev/v5/index.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <Box size={16} /> <span>V5: Prototype (index.html)</span>
+                                    </Link>
+                                    <div className="border-t border-white/10 my-1"></div>
+                                    <Link href="/dev/presentation.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <Monitor size={16} /> <span>Presentation.html</span>
+                                    </Link>
+                                    <Link href="/dev/test.html" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-sm text-gray-300 hover:text-white transition-colors">
+                                        <Monitor size={16} /> <span>Test.html</span>
                                     </Link>
                                 </div>
                             </div>
@@ -101,14 +114,26 @@ export const Navbar = () => {
                             </button>
 
                             <div className={`flex flex-col gap-4 items-center w-full overflow-hidden transition-all duration-300 ${isDevOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'}`} >
-                                <Link href="/dev/" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
-                                    <Monitor size={14} /> Studio V1
+                                <Link href="/dev/index.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <Monitor size={14} /> V1 index.html
                                 </Link>
-                                <Link href="/dev/v2/" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
-                                    <Box size={14} /> Living Room V2
+                                <Link href="/dev/v2/index.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <Box size={14} /> V2 index.html
                                 </Link>
-                                <Link href="/dev/v3/" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
-                                    <ImageIcon size={14} /> HDRI Preview V3
+                                <Link href="/dev/v3/index.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <ImageIcon size={14} /> V3 index.html
+                                </Link>
+                                <Link href="/dev/v4/index.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <Box size={14} /> V4 index.html
+                                </Link>
+                                <Link href="/dev/v5/index.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <Box size={14} /> V5 index.html
+                                </Link>
+                                <Link href="/dev/presentation.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <Monitor size={14} /> Presentation
+                                </Link>
+                                <Link href="/dev/test.html" className="text-base text-gray-400 hover:text-white flex items-center gap-2">
+                                    <Monitor size={14} /> Test
                                 </Link>
                             </div>
                         </div>

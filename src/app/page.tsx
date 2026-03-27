@@ -2,14 +2,14 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, useGLTF, Environment, OrbitControls, useVideoTexture, useTexture, PivotControls, TransformControls, PointerLockControls } from '@react-three/drei';
-import { useControls, button } from 'leva';
+import { useControls, button, Leva } from 'leva';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 // SWITCH TO VECTOR MAP (Yellow/Golden Theme)
 import TacticalMapVector from './components/TacticalMapVector';
-import PixelSwarmText from './components/PixelSwarmText';
+import IntroOverlay from '@/components/IntroOverlay';
 
 // --- CONFIG ---
 const CONFIG = {
@@ -44,7 +44,27 @@ type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
 function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void }) {
     const { scene } = useGLTF('/virtual_studio_ver_02.glb');
     // Restore Tree Video on the main screen
-    const videoTex = useVideoTexture('/assets/video/drzewo_video.mp4');
+    const videoTex = useVideoTexture('/images/freeflow.mp4', { muted: false, loop: true, start: true });
+
+    // Ensure audio works bypassing autoplay policies on first user interaction
+    useEffect(() => {
+        const vid = videoTex.image;
+        if (!vid) return;
+
+        const handleInteraction = () => {
+            if (vid.paused) {
+                vid.play().catch(e => console.log('Video play failed:', e));
+            }
+        };
+
+        window.addEventListener('click', handleInteraction, { once: true });
+        window.addEventListener('touchstart', handleInteraction, { once: true });
+
+        return () => {
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
+        };
+    }, [videoTex]);
 
     // Hardcoded camera setup from calibration
     useEffect(() => {
@@ -84,9 +104,38 @@ function StudioModel({ onCamSetup }: { onCamSetup: (data: CamSetupData) => void 
                     videoTex.wrapT = THREE.ClampToEdgeWrapping;
                     videoTex.minFilter = THREE.LinearFilter;
                     videoTex.magFilter = THREE.LinearFilter;
-                    videoTex.repeat.set(0.95, 0.95);
-                    videoTex.offset.set(0.025, 0.025);
                     videoTex.flipY = true;
+
+                    // Automatically fit video to screen bounds without stretching
+                    const adjustVideoAspect = () => {
+                        const vid = videoTex.image;
+                        if (!vid || !vid.videoWidth || !size.y) return;
+                        
+                        const screenWidth = Math.max(size.x, size.z);
+                        const screenHeight = size.y;
+                        const screenAspect = screenWidth / screenHeight;
+                        const videoAspect = vid.videoWidth / vid.videoHeight;
+                        
+                        if (screenAspect > videoAspect) {
+                            const scaleY = videoAspect / screenAspect;
+                            videoTex.repeat.set(1, scaleY);
+                            videoTex.offset.set(0, (1 - scaleY) / 2);
+                        } else {
+                            const scaleX = screenAspect / videoAspect;
+                            videoTex.repeat.set(scaleX, 1);
+                            videoTex.offset.set((1 - scaleX) / 2, 0);
+                        }
+                        videoTex.needsUpdate = true;
+                    };
+
+                    const vid = videoTex.image;
+                    if (vid) {
+                        if (vid.readyState >= 1) {
+                            adjustVideoAspect();
+                        } else {
+                            vid.addEventListener('loadedmetadata', adjustVideoAspect, { once: true });
+                        }
+                    }
 
                     mesh.material = new THREE.MeshBasicMaterial({
                         map: videoTex,
@@ -603,7 +652,7 @@ function Avatar() {
         smoothness,
         visible
     } = useControls('Digital Avatar', {
-        visible: true,
+        visible: false,
         pos: { value: [6.0, 0.4, 23.5], step: 0.1 }, // Updated from Screenshot
         scale: { value: 1.25, min: 0.1, max: 5 }, // Updated from Screenshot
         aspectRatio: { value: 0.95, min: 0.5, max: 3, step: 0.01, label: 'Aspect Ratio' }, // To fix stretching
@@ -891,6 +940,8 @@ function CameraSetup({ setupData, controlsRef, orbitAngle }: {
 
 // --- LANDING PAGE KOMPONENT ---
 export default function HomePage() {
+    const [introActive, setIntroActive] = useState(true);
+
     const [camSetup, setCamSetup] = useState<CamSetupData | null>(null);
     const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
@@ -908,6 +959,8 @@ export default function HomePage() {
 
     return (
         <main className="relative w-full min-h-screen bg-[#020617] text-white overflow-x-hidden selection:bg-purple-500/30">
+            <Leva collapsed />
+            {introActive && <IntroOverlay onComplete={() => setIntroActive(false)} />}
 
             {/* 360° VIEW TOGGLE */}
             <div className="fixed top-4 right-4 z-[9999]">
@@ -960,7 +1013,6 @@ export default function HomePage() {
                             <StarField />
                             <Avatar />
                             <StudioModel onCamSetup={setCamSetup} />
-                            <PixelSwarmText />
                             <Environment preset="night" blur={0.8} background={false} />
                         </Suspense>
                         <CameraSetup setupData={camSetup} controlsRef={controlsRef} orbitAngle={sceneRotation} />

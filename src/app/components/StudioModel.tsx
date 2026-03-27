@@ -7,7 +7,7 @@ import { usePearlMaterial } from './materials/PearlMaterial';
 import { StatusPearl } from './safelayer/StatusPearl';
 
 // --- CONFIG ---
-const VIDEO_PATH = '/assets/video/drzewo_video.mp4';
+const VIDEO_PATH = '/images/freeflow.mp4';
 const STUDIO_PATH = '/virtual_studio_ver_02.glb';
 
 type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
@@ -15,7 +15,7 @@ type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
 export function StudioModel({ onCamSetup }: { onCamSetup?: (data: CamSetupData) => void }) {
     const gltf = useGLTF(STUDIO_PATH); // Load generic
     const scene = gltf.scene; // Extract scene
-    const videoTex = useVideoTexture(VIDEO_PATH);
+    const videoTex = useVideoTexture(VIDEO_PATH, { muted: false, loop: true, start: true });
     const pearlMaterial = usePearlMaterial();
     const [screenFound, setScreenFound] = useState(false);
 
@@ -79,9 +79,39 @@ export function StudioModel({ onCamSetup }: { onCamSetup?: (data: CamSetupData) 
                     // If image is upside down, set this to true.
                     videoTex.flipY = false;
 
-                    // Optional: Crop edges if the curve has bad UVs at the border
-                    // videoTex.repeat.set(0.98, 0.98);
-                    // videoTex.offset.set(0.01, 0.01);
+                    // Automatically fit video to screen bounds without stretching
+                    const adjustVideoAspect = () => {
+                        const vid = videoTex.image;
+                        if (!vid || !vid.videoWidth || !size.y) return;
+                        
+                        const screenWidth = Math.max(size.x, size.z); // Support arbitrary rotation
+                        const screenHeight = size.y;
+                        const screenAspect = screenWidth / screenHeight;
+                        const videoAspect = vid.videoWidth / vid.videoHeight;
+                        
+                        if (screenAspect > videoAspect) {
+                            // Screen is wider. Fit width, crop height.
+                            const scaleY = videoAspect / screenAspect;
+                            videoTex.repeat.set(1, scaleY);
+                            videoTex.offset.set(0, (1 - scaleY) / 2);
+                        } else {
+                            // Video is wider. Fit height, crop width.
+                            const scaleX = screenAspect / videoAspect;
+                            videoTex.repeat.set(scaleX, 1);
+                            videoTex.offset.set((1 - scaleX) / 2, 0);
+                        }
+                        videoTex.needsUpdate = true;
+                    };
+
+                    const vid = videoTex.image;
+                    if (vid) {
+                        if (vid.readyState >= 1) {
+                            adjustVideoAspect();
+                        } else {
+                            // Safe binding, will fire once metadata is ready
+                            vid.addEventListener('loadedmetadata', adjustVideoAspect, { once: true });
+                        }
+                    }
 
                     mesh.material = new THREE.MeshBasicMaterial({
                         map: videoTex,
@@ -145,6 +175,26 @@ export function StudioModel({ onCamSetup }: { onCamSetup?: (data: CamSetupData) 
             }
         }
     }, [scene, videoTex, onCamSetup]);
+
+    // Ensure audio works bypassing autoplay policies on first user interaction
+    useEffect(() => {
+        const vid = videoTex.image;
+        if (!vid) return;
+
+        const handleInteraction = () => {
+            if (vid.paused) {
+                vid.play().catch(e => console.log('Video play failed:', e));
+            }
+        };
+
+        window.addEventListener('click', handleInteraction, { once: true });
+        window.addEventListener('touchstart', handleInteraction, { once: true });
+
+        return () => {
+            window.removeEventListener('click', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
+        };
+    }, [videoTex]);
 
     return (
         <group>

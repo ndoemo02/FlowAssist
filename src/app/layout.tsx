@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { Navbar } from '@/components/Navbar'
 
 export const metadata: Metadata = {
-  title: 'FlowAssistant',
+  title: 'FlowAssistant: Smart Business',
   description: 'Voice Engineering Agency',
 }
 

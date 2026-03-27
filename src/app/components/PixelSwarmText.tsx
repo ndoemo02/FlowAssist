@@ -22,12 +22,9 @@ export default function PixelSwarmText() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Font sizes matched to dev/index.html visual weight
-        ctx.font = 'bold 350px Inter, sans-serif'; // Ensuring font matches app
-        ctx.fillText("FlowAssist", width / 2, height / 2 - 100);
-
+        // Font sizes matched to dev/index.html visual weight (FlowAssist text removed per request)
         ctx.font = 'bold 200px Inter, sans-serif';
-        ctx.fillText("Smart Business", width / 2, height / 2 + 150);
+        ctx.fillText("Smart Business", width / 2, height / 2);
 
         const imgData = ctx.getImageData(0, 0, width, height);
         const data = imgData.data;
