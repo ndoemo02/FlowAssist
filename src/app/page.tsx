@@ -3,9 +3,9 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, useGLTF, Environment, OrbitControls, useVideoTexture, useTexture, PivotControls, TransformControls, PointerLockControls } from '@react-three/drei';
 import { useControls, button, Leva } from 'leva';
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 // SWITCH TO VECTOR MAP (Yellow/Golden Theme)
 import TacticalMapVector from './components/TacticalMapVector';
@@ -38,6 +38,53 @@ function getCameraConfig() {
 
 // --- TYPY ---
 type CamSetupData = { position: THREE.Vector3, target: THREE.Vector3 };
+
+type CameraCue = {
+    position: [number, number, number];
+    target: [number, number, number];
+    fov: number;
+};
+
+const CAMERA_CUES: Record<'intro' | 'wide' | 'close', CameraCue> = {
+    intro: {
+        position: [1.75, 1.35, 34.8],
+        target: [8.15, 0.72, 24.55],
+        fov: 64
+    },
+    wide: {
+        position: [2.35, 0.98, 31.75],
+        target: CONFIG.camTarget,
+        fov: 60
+    },
+    close: {
+        position: [4.38, 0.85, 27.4],
+        target: CONFIG.camTarget,
+        fov: 55
+    }
+};
+
+const MOBILE_CAMERA_CUES: Record<'intro' | 'wide' | 'close', CameraCue> = {
+    intro: {
+        position: [0.25, 1.15, 33.6],
+        target: [4.75, 0.78, 25.7],
+        fov: 66
+    },
+    wide: {
+        position: CONFIG.mobileCamPosition,
+        target: CONFIG.mobileCamTarget,
+        fov: 62
+    },
+    close: {
+        position: [1.95, 0.86, 26.9],
+        target: CONFIG.mobileCamTarget,
+        fov: 57
+    }
+};
+
+const smoothstep01 = (value: number) => {
+    const x = THREE.MathUtils.clamp(value, 0, 1);
+    return x * x * (3 - 2 * x);
+};
 
 // --- KOMPONENTY SCENY ---
 
@@ -306,8 +353,6 @@ function ScreenFrame({ scene }: { scene: THREE.Group }) {
         });
         if (meshes.length === 0) { console.warn('⚠️ ScreenFrame: No screen mesh found'); return null; }
 
-        console.log(`🖼️ ScreenFrame: Found ${meshes.length} screen meshes: ${meshes.map(m => m.name).join(', ')}`);
-
         scene.updateWorldMatrix(true, false);
         const sceneInv = new THREE.Matrix4().copy(scene.matrixWorld).invert();
         const results: { curve: THREE.CatmullRomCurve3; wPos: THREE.Vector3; wQuat: THREE.Quaternion; wScale: THREE.Vector3 }[] = [];
@@ -315,7 +360,6 @@ function ScreenFrame({ scene }: { scene: THREE.Group }) {
         for (const mesh of meshes) {
             const loop = extractBoundaryLoop(mesh.geometry);
             if (loop.length < 3) { console.warn(`   ⚠️ "${mesh.name}": ${loop.length} boundary verts, skipping`); continue; }
-            console.log(`   → "${mesh.name}": ${loop.length} boundary edges → flat bezel`);
 
             mesh.updateWorldMatrix(true, false);
             const rel = new THREE.Matrix4().copy(sceneInv).multiply(mesh.matrixWorld);
@@ -725,14 +769,19 @@ function Avatar() {
     );
 }
 
-function CameraSetup({ setupData, controlsRef, orbitAngle }: {
+function CameraSetup({ setupData, controlsRef, orbitAngle, introActive }: {
     setupData: CamSetupData | null;
     controlsRef: MutableRefObject<OrbitControlsImpl | null>;
     orbitAngle: number;
+    introActive: boolean;
 }) {
     const { camera } = useThree();
     const initializedRef = useRef(false);
     const initialCamPosRef = useRef(new THREE.Vector3());
+    const entryStartRef = useRef<number | null>(null);
+    const scrollProgressRef = useRef(0);
+    const cinematicPosRef = useRef(new THREE.Vector3());
+    const cinematicTargetRef = useRef(new THREE.Vector3());
 
     // === DEVELOPER PANEL ===
     const { freeCamera, controlMode, precision, rotateSpeed, panSpeed, moveSpeed } = useControls('Director Camera', {
@@ -823,30 +872,53 @@ function CameraSetup({ setupData, controlsRef, orbitAngle }: {
 
     // === RESPONSIVE CAMERA CONFIG ===
     const camConfig = useMemo(() => getCameraConfig(), []);
-    const SCENE_CENTER = useMemo(() => new THREE.Vector3(...camConfig.target), [camConfig.target]);
+    const cueSet = useMemo(() => camConfig.isMobile ? MOBILE_CAMERA_CUES : CAMERA_CUES, [camConfig.isMobile]);
+    const SCENE_CENTER = useMemo(() => new THREE.Vector3(...cueSet.wide.target), [cueSet]);
+
+    useEffect(() => {
+        const updateScrollProgress = () => {
+            const travel = Math.max(window.innerHeight * 0.78, 1);
+            scrollProgressRef.current = smoothstep01(window.scrollY / travel);
+        };
+
+        updateScrollProgress();
+        window.addEventListener('scroll', updateScrollProgress, { passive: true });
+        window.addEventListener('resize', updateScrollProgress);
+
+        return () => {
+            window.removeEventListener('scroll', updateScrollProgress);
+            window.removeEventListener('resize', updateScrollProgress);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!introActive && entryStartRef.current === null) {
+            entryStartRef.current = performance.now() / 1000;
+        }
+    }, [introActive]);
 
     // === INITIAL CAMERA POSITION (directly from CONFIG, no race condition) ===
     useEffect(() => {
         if (initializedRef.current) return;
 
-        // Set camera position directly from CONFIG (responsive)
-        camera.position.set(...camConfig.position);
+        camera.position.set(...cueSet.intro.position);
+        (camera as THREE.PerspectiveCamera).fov = cueSet.intro.fov;
         camera.updateProjectionMatrix();
 
         // Set orbit target
         if (controlsRef.current) {
-            controlsRef.current.target.copy(SCENE_CENTER);
+            controlsRef.current.target.set(...cueSet.intro.target);
             controlsRef.current.update();
         }
 
-        initialCamPosRef.current.set(...camConfig.position);
+        initialCamPosRef.current.set(...cueSet.wide.position);
         initializedRef.current = true;
 
         // Log initial position
         console.log(`%c🎬 Camera Initialized (${camConfig.isMobile ? 'MOBILE' : 'DESKTOP'})`, 'color: #00ff88; font-weight: bold;');
-        console.log(`  Position: [${camConfig.position.join(', ')}]`);
-        console.log(`  Target: [${camConfig.target.join(', ')}]`);
-    }, [camera, controlsRef, SCENE_CENTER, camConfig]);
+        console.log(`  Position: [${cueSet.intro.position.join(', ')}]`);
+        console.log(`  Target: [${cueSet.intro.target.join(', ')}]`);
+    }, [camera, controlsRef, camConfig.isMobile, cueSet]);
 
     // === LAST LOG TRACKER (prevent spam) ===
     const lastLogTime = useRef(0);
@@ -877,6 +949,36 @@ function CameraSetup({ setupData, controlsRef, orbitAngle }: {
                     controlsRef.current.target.copy(newTarget);
                 }
             }
+        }
+
+        // Cinematic entry + scroll push-in.
+        if (!freeCamera && Math.abs(orbitAngle) < 0.001 && controlsRef.current && initializedRef.current) {
+            const entryElapsed = entryStartRef.current === null ? 0 : Math.max(0, performance.now() / 1000 - entryStartRef.current);
+            const entryProgress = introActive ? 0 : smoothstep01(entryElapsed / 1.9);
+            const scrollProgress = scrollProgressRef.current;
+
+            const introPos = new THREE.Vector3(...cueSet.intro.position);
+            const widePos = new THREE.Vector3(...cueSet.wide.position);
+            const closePos = new THREE.Vector3(...cueSet.close.position);
+            const introTarget = new THREE.Vector3(...cueSet.intro.target);
+            const wideTarget = new THREE.Vector3(...cueSet.wide.target);
+            const closeTarget = new THREE.Vector3(...cueSet.close.target);
+
+            cinematicPosRef.current.lerpVectors(introPos, widePos, entryProgress);
+            cinematicTargetRef.current.lerpVectors(introTarget, wideTarget, entryProgress);
+
+            cinematicPosRef.current.lerp(closePos, scrollProgress);
+            cinematicTargetRef.current.lerp(closeTarget, scrollProgress);
+
+            camera.position.lerp(cinematicPosRef.current, 1 - Math.exp(-delta * 4.8));
+            controlsRef.current.target.lerp(cinematicTargetRef.current, 1 - Math.exp(-delta * 5.8));
+            (camera as THREE.PerspectiveCamera).fov = THREE.MathUtils.lerp(
+                (camera as THREE.PerspectiveCamera).fov,
+                THREE.MathUtils.lerp(cueSet.wide.fov, cueSet.close.fov, scrollProgress),
+                1 - Math.exp(-delta * 4.2)
+            );
+            (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+            controlsRef.current.update();
         }
 
         // ─── AUTO ORBIT (slider) ───
@@ -1015,7 +1117,7 @@ export default function HomePage() {
                             <StudioModel onCamSetup={setCamSetup} />
                             <Environment preset="night" blur={0.8} background={false} />
                         </Suspense>
-                        <CameraSetup setupData={camSetup} controlsRef={controlsRef} orbitAngle={sceneRotation} />
+                        <CameraSetup setupData={camSetup} controlsRef={controlsRef} orbitAngle={sceneRotation} introActive={introActive} />
                         <OrbitControls
                             ref={controlsRef}
                             enablePan={true}
@@ -1030,14 +1132,6 @@ export default function HomePage() {
                                 LEFT: THREE.MOUSE.ROTATE,
                                 MIDDLE: THREE.MOUSE.DOLLY,
                                 RIGHT: THREE.MOUSE.PAN
-                            }}
-                            onChange={() => {
-                                if (!controlsRef.current) return;
-                                const cam = controlsRef.current.object;
-                                const tgt = controlsRef.current.target;
-                                console.log(
-                                    `🖱️ Orbit → Pos [${cam.position.x.toFixed(2)}, ${cam.position.y.toFixed(2)}, ${cam.position.z.toFixed(2)}] Target [${tgt.x.toFixed(2)}, ${tgt.y.toFixed(2)}, ${tgt.z.toFixed(2)}]`
-                                );
                             }}
                         />
                     </Canvas>
